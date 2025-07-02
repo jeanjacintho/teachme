@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { ModeToggle } from "./toggle-dark-mode"
+// import { ModeToggle } from "./toggle-dark-mode"
 
 interface SiteHeaderProps {
   videoName?: string;
@@ -19,9 +19,9 @@ export function SiteHeader({ videoName }: SiteHeaderProps) {
         <h1 className="text-base font-medium truncate">
           {videoName || "TeachMe"}
         </h1>
-        <div className="ml-auto flex items-center gap-2">
+        {/* <div className="ml-auto flex items-center gap-2">
           <ModeToggle />
-        </div>
+        </div> */}
       </div>
     </header>
   )

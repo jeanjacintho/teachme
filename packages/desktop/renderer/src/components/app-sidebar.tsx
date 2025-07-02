@@ -29,6 +29,8 @@ import { Button } from "@/components/ui/button"
 import { GraduationCapIcon, FolderOpenIcon, FolderIcon, PlayIcon, ChevronLeftIcon, Settings as SettingsIcon } from "lucide-react"
 import { VideoPlayer } from "./video-player"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { ModeToggle } from "./toggle-dark-mode"
+import { DialogSettings } from "./dialog-settings"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   onVideoSelect?: (video: { path: string; name: string } | null) => void;
@@ -197,9 +199,7 @@ export function AppSidebar({ onVideoSelect, ...props }: AppSidebarProps) {
               <DialogHeader>
                 <DialogTitle>Settings</DialogTitle>
               </DialogHeader>
-              <div className="p-4 text-muted-foreground">
-                Settings modal placeholder. Future app settings will be configured here.
-              </div>
+              <DialogSettings />
             </DialogContent>
           </Dialog>
         </SidebarFooter>

@@ -1,0 +1,42 @@
+<svg width="64" height="48" viewBox="0 0 64 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect x="2" y="2" width="60" height="44" rx="4" fill="hsl(0 0% 100%)" stroke="hsl(214.3 31.8% 91.4%)" stroke-width="0.5"/>
+  
+  <!-- Header -->
+  <rect x="2" y="2" width="60" height="8" rx="4" fill="hsl(210 40% 98%)"/>
+  <rect x="2" y="10" width="60" height="36" rx="0" fill="hsl(0 0% 100%)"/>
+  
+  <!-- Window controls -->
+  <circle cx="6" cy="6" r="1.5" fill="#ff5f57"/>
+  <circle cx="11" cy="6" r="1.5" fill="#ffbd2e"/>
+  <circle cx="16" cy="6" r="1.5" fill="#28ca42"/>
+  
+  <!-- Title -->
+  <rect x="24" y="4" width="20" height="4" rx="1" fill="hsl(215.4 16.3% 46.9%)"/>
+  
+  <!-- Sidebar -->
+  <rect x="6" y="16" width="12" height="26" rx="2" fill="hsl(210 40% 96%)"/>
+  
+  <!-- Sidebar items -->
+  <rect x="8" y="18" width="8" height="2" rx="1" fill="hsl(215.4 16.3% 46.9%)"/>
+  <rect x="8" y="22" width="6" height="2" rx="1" fill="hsl(220 8.9% 46.1%)"/>
+  <rect x="8" y="26" width="7" height="2" rx="1" fill="hsl(220 8.9% 46.1%)"/>
+  <rect x="8" y="30" width="5" height="2" rx="1" fill="hsl(220 8.9% 46.1%)"/>
+  
+  <!-- Main content -->
+  <rect x="22" y="16" width="36" height="12" rx="2" fill="hsl(210 40% 98%)" stroke="hsl(214.3 31.8% 91.4%)" stroke-width="0.5"/>
+  <rect x="22" y="32" width="17" height="10" rx="2" fill="hsl(210 40% 98%)" stroke="hsl(214.3 31.8% 91.4%)" stroke-width="0.5"/>
+  <rect x="41" y="32" width="17" height="10" rx="2" fill="hsl(210 40% 98%)" stroke="hsl(214.3 31.8% 91.4%)" stroke-width="0.5"/>
+  
+  <!-- Content lines -->
+  <rect x="24" y="18" width="20" height="1.5" rx="0.5" fill="hsl(215.4 16.3% 46.9%)"/>
+  <rect x="24" y="21" width="16" height="1.5" rx="0.5" fill="hsl(220 8.9% 46.1%)"/>
+  <rect x="24" y="24" width="24" height="1.5" rx="0.5" fill="hsl(220 8.9% 46.1%)"/>
+  
+  <!-- Chart representation in main content -->
+  <rect x="24" y="34" width="13" height="1.5" rx="0.5" fill="hsl(220 8.9% 46.1%)"/>
+  <rect x="24" y="37" width="10" height="1.5" rx="0.5" fill="hsl(220 8.9% 46.1%)"/>
+  
+  <rect x="43" y="34" width="13" height="1.5" rx="0.5" fill="hsl(220 8.9% 46.1%)"/>
+  <rect x="43" y="37" width="11" height="1.5" rx="0.5" fill="hsl(220 8.9% 46.1%)"/>
+</svg>
