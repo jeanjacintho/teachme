@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
 import type { VideoFile, FolderItem } from "../../../../shared/types/video"
+import { useFolder } from "../context/folder-context"
 
 // Declaração de tipo para window.api
 declare global {
@@ -40,24 +41,22 @@ export function AppSidebar({ onVideoSelect, ...props }: AppSidebarProps) {
   const [isClient, setIsClient] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedVideoPath, setSelectedVideoPath] = useState<string | null>(null);
+  const { folderPath } = useFolder();
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  const handleSelectFolder = async () => {
-    try {
-      const folderPath = await window.api?.selectFolder();
-      if (folderPath) {
-        setCurrentPath(folderPath);
-        setPathHistory([folderPath]);
-        await loadFolderContents(folderPath);
-      }
-    } catch (error) {
-      // erro ao selecionar pasta
+  // Carregar automaticamente a pasta selecionada ao abrir a página de cursos
+  useEffect(() => {
+    if (folderPath && currentPath !== folderPath) {
+      setCurrentPath(folderPath);
+      setPathHistory([folderPath]);
+      loadFolderContents(folderPath);
     }
-  };
+  }, [folderPath]);
 
+  // Função para navegar entre subpastas e vídeos
   const loadFolderContents = async (folderPath: string) => {
     try {
       if (window.api) {
@@ -116,8 +115,8 @@ export function AppSidebar({ onVideoSelect, ...props }: AppSidebarProps) {
                 asChild
                 className="data-[slot=sidebar-menu-button]:!p-1.5"
               >
-                <a href="#">
-                  <GraduationCapIcon/>
+                <a href="#" className="">
+                  <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md"><GraduationCapIcon className="size-4"/></div>
                   <span className="text-base font-semibold">Teach Me.</span>
                 </a>
               </SidebarMenuButton>
@@ -126,17 +125,7 @@ export function AppSidebar({ onVideoSelect, ...props }: AppSidebarProps) {
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            <SidebarMenuItem className="px-3 py-2">
-
-              <Button 
-                className="w-full justify-start text-seconday"
-                onClick={handleSelectFolder}
-              >
-                <FolderOpenIcon />
-                <span>Selecionar Pasta</span>
-              </Button>
-            </SidebarMenuItem>
-            
+            {/* Interface de navegação só aparece após seleção */}
             {currentPath && isClient && (
               <div className="px-3 py-2 space-y-2">
                 {/* Breadcrumb */}
@@ -153,7 +142,6 @@ export function AppSidebar({ onVideoSelect, ...props }: AppSidebarProps) {
                   )}
                   <span className="truncate">{getCurrentFolderName()}</span>
                 </div>
-                
                 {/* Lista de itens */}
                 <div className="space-y-1">
                   {currentItems.map((item) => (
