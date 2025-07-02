@@ -55,16 +55,10 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
 
   // Controles básicos
   const togglePlay = () => {
-    console.log('togglePlay chamado, videoRef.current:', !!videoRef.current);
     if (videoRef.current) {
-      console.log('Vídeo pausado:', videoRef.current.paused);
       if (videoRef.current.paused) {
-        console.log('Tentando reproduzir vídeo...');
-        videoRef.current.play().catch(error => {
-          console.error('Erro ao reproduzir vídeo:', error);
-        });
+        videoRef.current.play();
       } else {
-        console.log('Tentando pausar vídeo...');
         videoRef.current.pause();
       }
     }
@@ -72,13 +66,9 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value);
-    console.log('handleSeek chamado com tempo:', time, 'videoRef.current:', !!videoRef.current, 'duration:', duration);
     if (videoRef.current && !isNaN(duration) && duration > 0) {
       videoRef.current.currentTime = time;
       setCurrentTime(time);
-      console.log('Tempo do vídeo definido para:', time);
-    } else {
-      console.log('Não foi possível fazer seek - vídeo não carregado ou duração inválida');
     }
   };
 
@@ -109,13 +99,9 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
   const toggleFullscreen = () => {
     if (videoRef.current) {
       if (!isFullscreen) {
-        videoRef.current.requestFullscreen().catch(error => {
-          console.error('Erro ao entrar em tela cheia:', error);
-        });
+        videoRef.current.requestFullscreen();
       } else {
-        document.exitFullscreen().catch(error => {
-          console.error('Erro ao sair da tela cheia:', error);
-        });
+        document.exitFullscreen();
       }
     }
   };
@@ -141,12 +127,10 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
     };
     
     const handlePlay = () => {
-      console.log('Evento PLAY disparado');
       setIsPlaying(true);
     };
     
     const handlePause = () => {
-      console.log('Evento PAUSE disparado');
       setIsPlaying(false);
     };
     
@@ -168,7 +152,6 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
     document.addEventListener('fullscreenchange', handleFullscreenChange);
 
     // Verificar estado inicial
-    console.log('Estado inicial do vídeo - paused:', video.paused);
     setIsPlaying(!video.paused);
 
     return () => {
@@ -181,11 +164,6 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
     };
   }, [videoUrl]); // Adicionar videoUrl como dependência
 
-  // Debug: Log quando isPlaying muda
-  useEffect(() => {
-    console.log('Estado isPlaying mudou para:', isPlaying);
-  }, [isPlaying]);
-
   // Monitorar estado do vídeo em tempo real
   useEffect(() => {
     const video = videoRef.current;
@@ -194,7 +172,6 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
     const checkVideoState = () => {
       const shouldBePlaying = !video.paused;
       if (shouldBePlaying !== isPlaying) {
-        console.log('Corrigindo estado - video.paused:', video.paused, 'isPlaying:', isPlaying);
         setIsPlaying(shouldBePlaying);
       }
     };
@@ -284,7 +261,6 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
           setVideoUrl(`file://${videoPath}`);
         }
       } catch (error) {
-        console.error('Erro ao carregar URL do vídeo:', error);
         setError('Erro ao carregar URL do vídeo');
         // Fallback direto
         setVideoUrl(`file://${videoPath}`);
@@ -302,19 +278,14 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
     if (!video) return;
 
     const handleError = (e: Event) => {
-      console.error('Erro no vídeo:', e);
-      console.error('Video src:', video.src);
-      console.error('Video error:', video.error);
       setError(`Erro ao carregar vídeo: ${video.error?.message || 'Formato não suportado'}`);
     };
 
     const handleLoadStart = () => {
-      console.log('Vídeo começou a carregar:', video.src);
       setError('');
     };
 
     const handleCanPlay = () => {
-      console.log('Vídeo pode ser reproduzido:', video.src);
       setError('');
     };
 
@@ -331,7 +302,7 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
 
   return (
     <div 
-      className="w-full h-full bg-black flex flex-col rounded-lg overflow-hidden relative"
+      className="w-full h-full bg-black flex flex-col overflow-hidden relative"
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setShowControls(false)}
     >
@@ -370,7 +341,6 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
             value={currentTime}
             disabled={!duration || isNaN(duration)}
             onChange={(e) => {
-              console.log('Barra de progresso alterada:', e.target.value);
               handleSeek(e);
             }}
             className="w-full h-1 bg-white/30 rounded-lg appearance-none cursor-pointer slider disabled:opacity-50"
@@ -402,7 +372,6 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
               className="text-white hover:bg-white/20"
               onClick={(e) => {
                 e.stopPropagation();
-                console.log('Botão play/pause clicado');
                 togglePlay();
               }}
             >

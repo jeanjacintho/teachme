@@ -10,6 +10,7 @@ declare global {
     api?: {
       selectFolder: () => Promise<string | null>;
       listFolderContents: (folderPath: string) => Promise<FolderItem[]>;
+      getVideoUrl: (filePath: string) => Promise<string>;
     };
   }
 }
@@ -24,8 +25,9 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
-import { GraduationCapIcon, FolderOpenIcon, FolderIcon, PlayIcon, ChevronLeftIcon } from "lucide-react"
+import { GraduationCapIcon, FolderOpenIcon, FolderIcon, PlayIcon, ChevronLeftIcon, Settings as SettingsIcon } from "lucide-react"
 import { VideoPlayer } from "./video-player"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   onVideoSelect?: (video: { path: string; name: string } | null) => void;
@@ -36,6 +38,8 @@ export function AppSidebar({ onVideoSelect, ...props }: AppSidebarProps) {
   const [pathHistory, setPathHistory] = useState<string[]>([]);
   const [currentItems, setCurrentItems] = useState<FolderItem[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [selectedVideoPath, setSelectedVideoPath] = useState<string | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -43,20 +47,14 @@ export function AppSidebar({ onVideoSelect, ...props }: AppSidebarProps) {
 
   const handleSelectFolder = async () => {
     try {
-      if (typeof window !== 'undefined' && window.api) {
-        const selectedFolder = await window.api.selectFolder();
-        if (selectedFolder) {
-          setCurrentPath(selectedFolder);
-          setPathHistory([selectedFolder]);
-          await loadFolderContents(selectedFolder);
-        }
-      } else {
-        console.log('Não estamos no Electron. Esta funcionalidade só funciona no app desktop.');
-        alert('Esta funcionalidade só funciona no app desktop. Execute o Electron para testar.');
+      const folderPath = await window.api?.selectFolder();
+      if (folderPath) {
+        setCurrentPath(folderPath);
+        setPathHistory([folderPath]);
+        await loadFolderContents(folderPath);
       }
     } catch (error) {
-      console.error('Erro ao selecionar pasta:', error);
-      alert('Erro ao selecionar pasta. Verifique o console para mais detalhes.');
+      // erro ao selecionar pasta
     }
   };
 
@@ -67,7 +65,7 @@ export function AppSidebar({ onVideoSelect, ...props }: AppSidebarProps) {
         setCurrentItems(items);
       }
     } catch (error) {
-      console.error('Erro ao carregar pasta:', error);
+      // erro ao carregar pasta
     }
   };
 
@@ -77,7 +75,9 @@ export function AppSidebar({ onVideoSelect, ...props }: AppSidebarProps) {
       setCurrentPath(newPath);
       setPathHistory(prev => [...prev, newPath]);
       await loadFolderContents(newPath);
+      setSelectedVideoPath(null); // Reset seleção ao entrar em pasta
     } else if (item.type === 'video') {
+      setSelectedVideoPath(item.path);
       onVideoSelect?.({ path: item.path, name: item.name });
     }
   };
@@ -95,6 +95,15 @@ export function AppSidebar({ onVideoSelect, ...props }: AppSidebarProps) {
   const getCurrentFolderName = () => {
     if (!currentPath) return '';
     return currentPath.split('/').pop() || currentPath;
+  };
+
+  // Função para formatar duração em HH:MM:SS
+  const formatDuration = (seconds: number | undefined) => {
+    if (!seconds || isNaN(seconds)) return '';
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -117,7 +126,8 @@ export function AppSidebar({ onVideoSelect, ...props }: AppSidebarProps) {
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            <SidebarMenuItem>
+            <SidebarMenuItem className="px-3 py-2">
+
               <Button 
                 className="w-full justify-start text-seconday"
                 onClick={handleSelectFolder}
@@ -151,15 +161,30 @@ export function AppSidebar({ onVideoSelect, ...props }: AppSidebarProps) {
                       key={item.path}
                       variant="ghost"
                       size="sm"
-                      className="w-full justify-start h-8 px-2 text-sm"
+                      className={`w-full justify-between h-8 px-2 text-sm ${
+                        item.type === 'video' && selectedVideoPath === item.path
+                          ? 'text-primary'
+                          : 'text-muted-foreground'
+                      }`}
                       onClick={() => handleItemClick(item)}
                     >
-                      {item.type === 'folder' ? (
-                        <FolderIcon className="h-4 w-4 mr-2" />
-                      ) : (
-                        <PlayIcon className="h-4 w-4 mr-2" />
+                      <div className="flex items-center flex-1 min-w-0">
+                        {item.type === 'folder' ? (
+                          <FolderIcon className="h-4 w-4 mr-2 flex-shrink-0" />
+                        ) : (
+                          <PlayIcon className="h-4 w-4 mr-2 flex-shrink-0" />
+                        )}
+                        <span className="truncate">{item.name}</span>
+                      </div>
+                      {item.type === 'video' && item.duration && (
+                        <span className={`text-xs ml-2 flex-shrink-0 ${
+                          selectedVideoPath === item.path
+                            ? 'text-primary'
+                            : 'text-muted-foreground'
+                        }`}>
+                          {formatDuration(item.duration)}
+                        </span>
                       )}
-                      <span className="truncate">{item.name}</span>
                     </Button>
                   ))}
                 </div>
@@ -168,7 +193,27 @@ export function AppSidebar({ onVideoSelect, ...props }: AppSidebarProps) {
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
-         
+          <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="ghost"
+                className="w-full flex items-center justify-start gap-2"
+                onClick={() => setSettingsOpen(true)}
+                aria-label="Open settings"
+              >
+                <SettingsIcon className="h-5 w-5" />
+                <span>Settings</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Settings</DialogTitle>
+              </DialogHeader>
+              <div className="p-4 text-muted-foreground">
+                Settings modal placeholder. Future app settings will be configured here.
+              </div>
+            </DialogContent>
+          </Dialog>
         </SidebarFooter>
       </Sidebar>
     </>
