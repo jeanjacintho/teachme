@@ -12,7 +12,7 @@ const themes = [
     value: "system",
     label: "System", 
     illustration: (
-      <div className="relative w-full aspect-[4/3] flex items-end justify-center">
+      <div className="relative w-full aspect-[4/3] flex items-end justify-center rounded-md">
         <div className="absolute inset-0 flex">
           <div className="w-1/2 h-full bg-white"/>
           <div className="w-1/2 h-full bg-[#181A20]" />
@@ -25,7 +25,7 @@ const themes = [
     value: "light",
     label: "Light",
     illustration: (
-      <div className="relative w-full aspect-[4/3] flex items-end justify-center bg-white rounded-lg">
+      <div className="relative w-full aspect-[4/3] flex items-end justify-center bg-white rounded-md">
         <Image src="/dashboard-light.svg" alt="Light" width={128} height={96} />
       </div>
     ),
@@ -34,7 +34,7 @@ const themes = [
     value: "dark", 
     label: "Dark",
     illustration: (
-      <div className="relative w-full aspect-[4/3] flex items-end justify-center bg-[#181A20] rounded-lg">
+      <div className="relative w-full aspect-[4/3] flex items-end justify-center bg-[#181A20] rounded-md">
         <Image src="/dashboard-dark.svg" alt="Dark" width={128} height={96} />
       </div>
     ),
@@ -56,14 +56,14 @@ export function ModeToggle() {
             <button
               
               className={cn(
-                "group relative flex-1 p-0 rounded-2xl border-2 transition-all focus:outline-none",
+                "group relative flex-1 p-0 rounded-md border-2 transition-all focus:outline-none",
                 theme === t.value
-                  ? "border-primary ring-2 ring-primary/20"
-                  : "border-border hover:border-primary/40"
+                  ? "border-primary"
+                  : "border-transparent hover:border-primary/40"
               )}
             >
-              <Card className="flex flex-col overflow-hidden items-center bg-transparent shadow-none border-0 p-0">
-                <div className="w-full">{t.illustration}</div>
+              <Card className="flex flex-col rounded-md overflow-hidden items-center bg-transparent shadow-none p-0">
+                <div className="w-full overflow-hidden mb-[-10px]">{t.illustration}</div>
               </Card>
               {theme === t.value && (
                 <span className="absolute -top-2 -right-2 bg-primary rounded-full p-1 shadow-lg z-2">

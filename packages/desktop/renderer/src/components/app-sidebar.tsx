@@ -4,6 +4,7 @@ import * as React from "react"
 import { useState, useEffect } from "react"
 import type { VideoFile, FolderItem } from "../../../../shared/types/video"
 import { useFolder } from "../context/folder-context"
+import "@/app/sidebar-scrollbar.css"
 
 // Declaração de tipo para window.api
 declare global {
@@ -126,61 +127,63 @@ export function AppSidebar({ onVideoSelect, ...props }: AppSidebarProps) {
           </SidebarMenu>
         </SidebarHeader>
         <SidebarContent>
-          <SidebarMenu>
-            {/* Interface de navegação só aparece após seleção */}
-            {currentPath && isClient && (
-              <div className="px-3 py-2 space-y-2">
-                {/* Breadcrumb */}
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  {pathHistory.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2"
-                      onClick={handleBackClick}
-                    >
-                      <ChevronLeftIcon className="h-3 w-3" />
-                    </Button>
-                  )}
-                  <span className="truncate">{getCurrentFolderName()}</span>
-                </div>
-                {/* Lista de itens */}
-                <div className="space-y-1">
-                  {currentItems.map((item) => (
-                    <Button
-                      key={item.path}
-                      variant="ghost"
-                      size="sm"
-                      className={`w-full justify-between h-8 px-2 text-sm ${
-                        item.type === 'video' && selectedVideoPath === item.path
-                          ? 'text-primary'
-                          : 'text-muted-foreground'
-                      }`}
-                      onClick={() => handleItemClick(item)}
-                    >
-                      <div className="flex items-center flex-1 min-w-0">
-                        {item.type === 'folder' ? (
-                          <FolderIcon className="h-4 w-4 mr-2 flex-shrink-0" />
-                        ) : (
-                          <PlayIcon className="h-4 w-4 mr-2 flex-shrink-0" />
-                        )}
-                        <span className="truncate">{item.name}</span>
-                      </div>
-                      {item.type === 'video' && item.duration && (
-                        <span className={`text-xs ml-2 flex-shrink-0 ${
-                          selectedVideoPath === item.path
+          <div className="custom-scrollbar overflow-y-auto h-full">
+            <SidebarMenu>
+              {/* Interface de navegação só aparece após seleção */}
+              {currentPath && isClient && (
+                <div className="px-3 py-2 space-y-2">
+                  {/* Breadcrumb */}
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    {pathHistory.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2"
+                        onClick={handleBackClick}
+                      >
+                        <ChevronLeftIcon className="h-3 w-3" />
+                      </Button>
+                    )}
+                    <span className="truncate">{getCurrentFolderName()}</span>
+                  </div>
+                  {/* Lista de itens */}
+                  <div className="space-y-1">
+                    {currentItems.map((item) => (
+                      <Button
+                        key={item.path}
+                        variant="ghost"
+                        size="sm"
+                        className={`w-full justify-between h-8 px-2 text-sm ${
+                          item.type === 'video' && selectedVideoPath === item.path
                             ? 'text-primary'
                             : 'text-muted-foreground'
-                        }`}>
-                          {formatDuration(item.duration)}
-                        </span>
-                      )}
-                    </Button>
-                  ))}
+                        }`}
+                        onClick={() => handleItemClick(item)}
+                      >
+                        <div className="flex items-center flex-1 min-w-0">
+                          {item.type === 'folder' ? (
+                            <FolderIcon className="h-4 w-4 mr-2 flex-shrink-0" />
+                          ) : (
+                            <PlayIcon className="h-4 w-4 mr-2 flex-shrink-0" />
+                          )}
+                          <span className="truncate">{item.name}</span>
+                        </div>
+                        {item.type === 'video' && item.duration && (
+                          <span className={`text-xs ml-2 flex-shrink-0 ${
+                            selectedVideoPath === item.path
+                              ? 'text-primary'
+                              : 'text-muted-foreground'
+                          }`}>
+                            {formatDuration(item.duration)}
+                          </span>
+                        )}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </SidebarMenu>
+              )}
+            </SidebarMenu>
+          </div>
         </SidebarContent>
         <SidebarFooter>
           <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
