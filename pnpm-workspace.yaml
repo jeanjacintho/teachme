@@ -1,0 +1,14 @@
+packages:
+  - packages/*
+  - packages/desktop/*
+  - packages/shared/*
+
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - '@tailwindcss/oxide'
+  - electron
+  - prisma
+  - sharp
+  - sqlite3
+  - unrs-resolver

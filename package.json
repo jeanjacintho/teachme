@@ -1,39 +1,19 @@
 {
-  "name": "renderer",
-  "version": "0.1.0",
-  "private": true,
+  "name": "teachme",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently \"pnpm --filter ./packages/desktop/renderer dev\" \"wait-on tcp:3000 && pnpm --filter ./packages/desktop/main start\"",
+    "electron:dev": "pnpm --filter ./packages/desktop/main build && pnpm --filter ./packages/desktop/main start"
   },
-  "dependencies": {
-    "@radix-ui/react-checkbox": "^1.3.2",
-    "@radix-ui/react-dialog": "^1.1.14",
-    "@radix-ui/react-dropdown-menu": "^2.1.15",
-    "@radix-ui/react-separator": "^1.1.7",
-    "@radix-ui/react-slot": "^1.2.3",
-    "@radix-ui/react-tooltip": "^1.2.7",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "lucide-react": "^0.525.0",
-    "next": "15.3.4",
-    "next-themes": "^0.4.6",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "tailwind-merge": "^3.3.1"
-  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.12.4",
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "15.3.4",
-    "tailwindcss": "^4",
-    "tw-animate-css": "^1.3.4",
-    "typescript": "^5"
+    "concurrently": "^9.2.0",
+    "wait-on": "^8.0.3"
   }
 }
