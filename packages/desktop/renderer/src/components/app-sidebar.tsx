@@ -2,11 +2,9 @@
 
 import * as React from "react"
 import { useState, useEffect } from "react"
-import type { VideoFile, FolderItem } from "../../../../shared/types/video"
+import type { FolderItem } from "../../../../shared/types/video"
 import { useFolder } from "../context/folder-context"
 import "@/app/sidebar-scrollbar.css"
-
-// Declaração de tipo para window.api
 declare global {
   interface Window {
     api?: {
@@ -27,10 +25,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
-import { GraduationCapIcon, FolderOpenIcon, FolderIcon, PlayIcon, ChevronLeftIcon, Settings as SettingsIcon } from "lucide-react"
-import { VideoPlayer } from "./video-player"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { ModeToggle } from "./toggle-dark-mode"
+import { GraduationCapIcon, FolderIcon, PlayIcon, ChevronLeftIcon, Settings as SettingsIcon } from "lucide-react"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { DialogSettings } from "./dialog-settings"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {

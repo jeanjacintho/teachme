@@ -1,30 +1,29 @@
-// Este arquivo será substituído pela tela de seleção de pasta. O conteúdo será movido para /app/page.tsx.
-
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { AppSidebar } from "@/components/app-sidebar";
-import { SidebarInset,SidebarProvider } from "@/components/ui/sidebar"
-import { SiteHeader } from "@/components/site-header";
-import { VideoPlayer } from "@/components/video-player";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Bookmark, Star, FolderOpenIcon, GalleryVerticalEnd, GraduationCap, GraduationCapIcon } from "lucide-react";
+import { Card, CardTitle, CardFooter } from "@/components/ui/card";
+import { GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFolder } from "../context/folder-context";
+import { useState } from "react";
 
 export default function SelectFolderPage() {
   const router = useRouter();
   const { setFolderPath } = useFolder();
+  const [loading, setLoading] = useState(false);
 
   const handleSelectFolder = async () => {
-    if (window.api) {
-      const folderPath = await window.api.selectFolder();
-      if (folderPath) {
-        setFolderPath(folderPath);
-        router.push('/app'); // Redireciona para a rota principal
+    setLoading(true);
+    try {
+      if (window.api) {
+        const folderPath = await window.api.selectFolder();
+        if (folderPath) {
+          setFolderPath(folderPath);
+          router.push('/app');
+        }
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -40,8 +39,8 @@ export default function SelectFolderPage() {
         <Card className="flex flex-col items-center">
           <CardTitle>Select your course folder to start</CardTitle>
           <CardFooter className="flex- flex-col gap-2">
-            <Button size="lg" className="w-full text-color-secondary" onClick={handleSelectFolder}>
-              Select folder
+            <Button size="lg" className="w-full" onClick={handleSelectFolder} disabled={loading}>
+              {loading ? 'Selecting...' : 'Select folder'}
             </Button>
             <p className="text-xs text-muted-foreground">You can change the course folder later in the settings.</p>
           </CardFooter>
