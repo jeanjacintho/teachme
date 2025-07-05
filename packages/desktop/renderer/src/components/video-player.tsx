@@ -303,6 +303,13 @@ const VideoPlayerComponent = ({
     }, 3000);
   };
 
+  // Resetar tempo quando o vídeo mudar
+  useEffect(() => {
+    setCurrentTime(0);
+    setDuration(0);
+    setIsPlaying(false);
+  }, [videoPath]);
+
   // Carregar URL do vídeo
   useEffect(() => {
     const loadVideoUrl = async () => {
