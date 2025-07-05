@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import type { FolderItem } from '../../../../shared/types/video';
 import { 
   Play, 
@@ -30,9 +32,18 @@ interface VideoPlayerProps {
   videoPath: string;
   videoName: string;
   onClose: () => void;
+  videoList?: FolderItem[];
+  currentVideoIndex?: number;
+  onVideoChange?: (video: { path: string; name: string }, index: number) => void;
 }
 
-export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps) {
+const VideoPlayerComponent = ({ 
+  videoPath, 
+  onClose, 
+  videoList = [], 
+  currentVideoIndex = 0,
+  onVideoChange 
+}: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
@@ -45,6 +56,7 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
   const [showControls, setShowControls] = useState(true);
   const controlsTimeoutRef = useRef<number | undefined>(undefined);
   const [error, setError] = useState<string>('');
+  const [autoPlay, setAutoPlay] = useState(false);
 
   // Formatar tempo em MM:SS
   const formatTime = (time: number) => {
@@ -52,6 +64,32 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
+
+  // Função para pular para o próximo vídeo
+  const playNextVideo = useCallback(() => {
+    if (videoList.length === 0 || currentVideoIndex === undefined) return;
+    
+    const nextIndex = currentVideoIndex + 1;
+    if (nextIndex < videoList.length) {
+      const nextVideo = videoList[nextIndex];
+      if (nextVideo.type === 'video') {
+        onVideoChange?.({ path: nextVideo.path, name: nextVideo.name }, nextIndex);
+      }
+    }
+  }, [videoList, currentVideoIndex, onVideoChange]);
+
+  // Função para pular para o vídeo anterior
+  const playPreviousVideo = useCallback(() => {
+    if (videoList.length === 0 || currentVideoIndex === undefined) return;
+    
+    const prevIndex = currentVideoIndex - 1;
+    if (prevIndex >= 0) {
+      const prevVideo = videoList[prevIndex];
+      if (prevVideo.type === 'video') {
+        onVideoChange?.({ path: prevVideo.path, name: prevVideo.name }, prevIndex);
+      }
+    }
+  }, [videoList, currentVideoIndex, onVideoChange]);
 
   // Controles básicos
   const togglePlay = () => {
@@ -96,7 +134,7 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
     }
   };
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = useCallback(() => {
     if (videoRef.current) {
       if (!isFullscreen) {
         videoRef.current.requestFullscreen();
@@ -104,7 +142,7 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
         document.exitFullscreen();
       }
     }
-  };
+  }, [isFullscreen]);
 
   const skipTime = (seconds: number) => {
     if (videoRef.current) {
@@ -143,12 +181,20 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
       setIsFullscreen(!!document.fullscreenElement);
     };
 
+    // Novo event listener para detectar quando o vídeo termina
+    const handleEnded = () => {
+      if (autoPlay) {
+        playNextVideo();
+      }
+    };
+
     // Adicionar todos os event listeners
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('loadedmetadata', handleLoadedMetadata);
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
     video.addEventListener('volumechange', handleVolumeChange);
+    video.addEventListener('ended', handleEnded);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
 
     // Verificar estado inicial
@@ -160,9 +206,10 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
       video.removeEventListener('volumechange', handleVolumeChange);
+      video.removeEventListener('ended', handleEnded);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
-  }, [videoUrl]); // Adicionar videoUrl como dependência
+  }, [videoUrl, autoPlay, playNextVideo]); // Adicionar playNextVideo como dependência
 
   // Monitorar estado do vídeo em tempo real
   useEffect(() => {
@@ -227,12 +274,21 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
             toggleFullscreen();
           }
           break;
+        // Novos atalhos para navegação entre vídeos
+        case 'n':
+          e.preventDefault();
+          playNextVideo();
+          break;
+        case 'p':
+          e.preventDefault();
+          playPreviousVideo();
+          break;
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, volume, isFullscreen]);
+  }, [isPlaying, volume, isFullscreen, videoList, currentVideoIndex, playNextVideo, playPreviousVideo, toggleFullscreen]);
 
   // Auto-hide controls
   const handleMouseMove = () => {
@@ -260,7 +316,7 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
           // Fallback para desenvolvimento
           setVideoUrl(`file://${videoPath}`);
         }
-      } catch (error) {
+      } catch {
         setError('Erro ao carregar URL do vídeo');
         // Fallback direto
         setVideoUrl(`file://${videoPath}`);
@@ -277,7 +333,7 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
     const video = videoRef.current;
     if (!video) return;
 
-    const handleError = (e: Event) => {
+    const handleError = () => {
       setError(`Erro ao carregar vídeo: ${video.error?.message || 'Formato não suportado'}`);
     };
 
@@ -340,9 +396,7 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
             max={duration || 0}
             value={currentTime}
             disabled={!duration || isNaN(duration)}
-            onChange={(e) => {
-              handleSeek(e);
-            }}
+            onChange={handleSeek}
             className="w-full h-1 bg-white/30 rounded-lg appearance-none cursor-pointer slider disabled:opacity-50"
             style={{
               background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${duration ? (currentTime / duration) * 100 : 0}%, rgba(255, 255, 255, 0.3) ${duration ? (currentTime / duration) * 100 : 0}%, rgba(255, 255, 255, 0.3) 100%)`
@@ -386,9 +440,6 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
             >
               <SkipForward className="h-5 w-5" />
             </Button>
-          </div>
-
-          <div className="flex items-center gap-2">
             {/* Volume Control */}
             <div className="flex items-center gap-2">
               <Button
@@ -412,6 +463,25 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
                 }}
               />
             </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            
+
+            {/* Auto Play Switch */}
+            {videoList.length > 1 && (
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="auto-play"
+                  checked={autoPlay}
+                  onCheckedChange={setAutoPlay}
+                  className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-white/30 data-[state=checked]:border-primary [&>span]:!bg-white [&>span]:dark:!bg-white"
+                />
+                <Label htmlFor="auto-play" className="text-white text-xs">
+                  Auto
+                </Label>
+              </div>
+            )}
 
             <Button
               variant="ghost"
@@ -432,9 +502,18 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
             </Button>
           </div>
         </div>
+
+        {/* Video Navigation Info */}
+        {videoList.length > 1 && (
+          <div className="flex justify-center text-white text-xs mt-2">
+            <span>
+              {currentVideoIndex + 1} de {videoList.filter(item => item.type === 'video').length}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* CSS para o slider */}
+      {/* CSS para o slider e switch */}
       <style jsx>{`
         .slider::-webkit-slider-thumb {
           appearance: none;
@@ -452,7 +531,33 @@ export function VideoPlayer({ videoPath, videoName, onClose }: VideoPlayerProps)
           cursor: pointer;
           border: none;
         }
+        
+        /* Estilo customizado para o switch */
+        [data-slot="switch"] {
+          background-color: rgba(255, 255, 255, 0.3) !important;
+        }
+        
+        [data-slot="switch"][data-state="checked"] {
+          background-color: hsl(var(--primary)) !important;
+        }
+        
+        /* Forçar bolinha branca em todos os casos */
+        [data-slot="switch-thumb"],
+        [data-slot="switch-thumb"][data-state="checked"],
+        [data-slot="switch-thumb"][data-state="unchecked"],
+        .dark [data-slot="switch-thumb"],
+        .dark [data-slot="switch-thumb"][data-state="checked"],
+        .dark [data-slot="switch-thumb"][data-state="unchecked"],
+        #auto-play [data-slot="switch-thumb"],
+        #auto-play [data-slot="switch-thumb"][data-state="checked"],
+        #auto-play [data-slot="switch-thumb"][data-state="unchecked"] {
+          background-color: white !important;
+          background: white !important;
+        }
       `}</style>
     </div>
   );
-} 
+};
+
+// Exportar o componente memoizado
+export const VideoPlayer = memo(VideoPlayerComponent); 

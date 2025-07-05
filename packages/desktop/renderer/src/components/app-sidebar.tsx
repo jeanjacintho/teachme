@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import type { FolderItem } from "../../../../shared/types/video"
 import { useFolder } from "../context/folder-context"
 import "@/app/sidebar-scrollbar.css"
@@ -26,67 +26,74 @@ import {
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { GraduationCapIcon, FolderIcon, PlayIcon, ChevronLeftIcon, Settings as SettingsIcon } from "lucide-react"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { DialogSettings } from "./dialog-settings"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   onVideoSelect?: (video: { path: string; name: string } | null) => void;
+  onVideoListChange?: (videoList: FolderItem[], currentIndex: number) => void;
+  selectedVideoPath?: string;
 }
 
-export function AppSidebar({ onVideoSelect, ...props }: AppSidebarProps) {
-  const [currentPath, setCurrentPath] = useState<string | null>(null);
-  const [pathHistory, setPathHistory] = useState<string[]>([]);
+export function AppSidebar({ onVideoSelect, onVideoListChange, selectedVideoPath, ...props }: AppSidebarProps) {
+  const { folderPath } = useFolder();
+  const [currentPath, setCurrentPath] = useState<string | null>(folderPath);
+  const [pathHistory, setPathHistory] = useState<string[]>(folderPath ? [folderPath] : []);
   const [currentItems, setCurrentItems] = useState<FolderItem[]>([]);
   const [isClient, setIsClient] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [selectedVideoPath, setSelectedVideoPath] = useState<string | null>(null);
-  const { folderPath } = useFolder();
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Carregar automaticamente a pasta selecionada ao abrir a página de cursos
+  // Sempre que a raiz mudar (folderPath), reseta navegação local
   useEffect(() => {
-    if (folderPath && currentPath !== folderPath) {
+    if (folderPath) {
       setCurrentPath(folderPath);
       setPathHistory([folderPath]);
-      loadFolderContents(folderPath);
     }
   }, [folderPath]);
 
-  // Função para navegar entre subpastas e vídeos
-  const loadFolderContents = async (folderPath: string) => {
+  // Carrega itens da pasta atual
+  useEffect(() => {
+    if (currentPath) {
+      loadFolderContents(currentPath);
+    }
+  }, [currentPath]);
+
+  const loadFolderContents = useCallback(async (folder: string) => {
     try {
       if (window.api) {
-        const items = await window.api.listFolderContents(folderPath);
+        const items = await window.api.listFolderContents(folder);
         setCurrentItems(items);
+        // Notificar sobre a mudança na lista de vídeos
+        const videoItems = items.filter(item => item.type === 'video');
+        onVideoListChange?.(videoItems, 0);
       }
-    } catch (error) {
+    } catch {
       // erro ao carregar pasta
     }
-  };
+  }, [onVideoListChange]);
 
-  const handleItemClick = async (item: FolderItem) => {
+  const handleItemClick = (item: FolderItem) => {
     if (item.type === 'folder') {
-      const newPath = item.path;
-      setCurrentPath(newPath);
-      setPathHistory(prev => [...prev, newPath]);
-      await loadFolderContents(newPath);
-      setSelectedVideoPath(null); // Reset seleção ao entrar em pasta
+      setCurrentPath(item.path);
+      setPathHistory(prev => [...prev, item.path]);
     } else if (item.type === 'video') {
-      setSelectedVideoPath(item.path);
+      // Encontrar o índice do vídeo selecionado
+      const videoItems = currentItems.filter(i => i.type === 'video');
+      const currentIndex = videoItems.findIndex(video => video.path === item.path);
       onVideoSelect?.({ path: item.path, name: item.name });
+      onVideoListChange?.(videoItems, currentIndex);
     }
   };
 
-  const handleBackClick = async () => {
+  const handleBackClick = () => {
     if (pathHistory.length > 1) {
       const newHistory = pathHistory.slice(0, -1);
-      const newPath = newHistory[newHistory.length - 1];
       setPathHistory(newHistory);
-      setCurrentPath(newPath);
-      await loadFolderContents(newPath);
+      setCurrentPath(newHistory[newHistory.length - 1]);
     }
   };
 
