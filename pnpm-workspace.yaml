@@ -8,6 +8,7 @@ onlyBuiltDependencies:
   - '@prisma/engines'
   - '@tailwindcss/oxide'
   - electron
+  - esbuild
   - prisma
   - sharp
   - sqlite3

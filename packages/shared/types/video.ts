@@ -9,4 +9,5 @@ export type FolderItem = {
   type: 'folder' | 'video';
   children?: FolderItem[];
   duration?: number; // duração em segundos
+  watched?: boolean; // se o vídeo foi assistido
 }; 

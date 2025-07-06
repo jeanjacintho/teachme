@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { VideoPlayerWrapper } from "@/components/video-player-wrapper";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Bookmark, Star } from "lucide-react";
+import { Bookmark, CheckCheck, Star, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFolder } from "../../context/folder-context";
 import type { FolderItem } from "../../../../../shared/types/video";
@@ -27,7 +26,58 @@ function VideoCard({ children }: { children: React.ReactNode }) {
 }
 
 // Componente para o card de descrição
-function DescriptionCard({ videoName }: { videoName?: string }) {
+function DescriptionCard({ videoName, videoPath, onVideoEnded }: { 
+  videoName?: string; 
+  videoPath?: string;
+  onVideoEnded?: () => void;
+}) {
+  const [isWatched, setIsWatched] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Carregar estado inicial do vídeo
+  useEffect(() => {
+    const loadVideoStatus = async () => {
+      if (!videoPath || !window.api) return;
+      
+      try {
+        // @ts-ignore - getVideoProgressByPath exists in preload
+        const progress = await window.api.getVideoProgressByPath(videoPath);
+        setIsWatched(!!progress?.watched);
+      } catch (error) {
+        console.error('❌ Error loading video status:', error);
+      }
+    };
+
+    loadVideoStatus();
+  }, [videoPath]);
+
+  // Função para alternar estado de assistido
+  const toggleWatchedStatus = async () => {
+    if (!videoPath || !window.api?.saveVideoProgress) return;
+    
+    setIsLoading(true);
+    try {
+      const newWatchedStatus = !isWatched;
+      console.log('🎬 Toggling video watched status:', { videoPath, currentStatus: isWatched, newStatus: newWatchedStatus });
+      
+      // Se está marcando como assistido, usar duração atual (ou 0 se não tiver)
+      // Se está desmarcando, usar 0
+      const currentTime = newWatchedStatus ? 0 : 0;
+      const duration = newWatchedStatus ? 0 : 0;
+      
+      await window.api.saveVideoProgress(videoPath, currentTime, duration, newWatchedStatus);
+      setIsWatched(newWatchedStatus);
+      console.log('✅ Video watched status toggled successfully');
+      
+      // Chamar callback para recarregar sidebar
+      onVideoEnded?.();
+    } catch (error) {
+      console.error('❌ Error toggling video watched status:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div>
       <Card>
@@ -42,12 +92,24 @@ function DescriptionCard({ videoName }: { videoName?: string }) {
           {/* Direita: Ações */}
           <div className="flex flex-col gap-4 items-end w-full md:w-auto md:min-w-[250px]">
             <div className="flex items-center gap-2 w-full md:w-auto">
-              <div className="flex items-center gap-2 border rounded-lg px-3 py-2 w-full md:w-auto">
-                <Checkbox id="watched" checked />
-                <label htmlFor="watched" className="text-sm font-medium cursor-pointer select-none">
-                  Marcar como assistida
-                </label>
-              </div>
+              <Button 
+                className="flex items-center gap-2 border rounded-lg px-3 py-2 w-full md:w-auto"
+                onClick={toggleWatchedStatus}
+                disabled={isLoading}
+                variant={isWatched ? "default" : "outline"}
+              >
+                {isWatched ? (
+                  <>
+                    <CheckCheck className="w-4 h-4" />
+                    Marcar como assistida
+                  </>
+                ) : (
+                  <>
+                   <CheckCheck className="w-4 h-4" />
+                    Marcar como assistida
+                  </>
+                )}
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"
@@ -98,6 +160,7 @@ export default function Home() {
   const [currentVideoIndex, setCurrentVideoIndex] = useState<number>(0);
   const { folderPath } = useFolder();
   const router = useRouter();
+  const sidebarRef = useRef<{ reloadCurrentFolder: () => void }>(null);
 
   useEffect(() => {
     if (!folderPath) {
@@ -123,12 +186,20 @@ export default function Home() {
     setCurrentVideo(null);
   };
 
+  const handleVideoEnded = () => {
+    // Recarregar a pasta atual para atualizar os ícones
+    setTimeout(() => {
+      sidebarRef.current?.reloadCurrentFolder();
+    }, 1000); // Aguardar 1 segundo para garantir que o banco foi atualizado
+  };
+
   return (
     <SidebarProvider style={{
       "--sidebar-width": "calc(var(--spacing) * 72)",
       "--header-height": "calc(var(--spacing) * 12)",
     } as React.CSSProperties}>
       <AppSidebar 
+        ref={sidebarRef}
         variant="inset" 
         onVideoSelect={handleVideoSelect}
         onVideoListChange={handleVideoListChange}
@@ -147,9 +218,14 @@ export default function Home() {
                   videoList={videoList}
                   currentVideoIndex={currentVideoIndex}
                   onVideoChange={handleVideoChange}
+                  onVideoEnded={handleVideoEnded}
                 />
               </VideoCard>
-              <DescriptionCard videoName={currentVideo.name} />
+              <DescriptionCard 
+                videoName={currentVideo.name} 
+                videoPath={currentVideo.path}
+                onVideoEnded={handleVideoEnded}
+              />
             </VideoLayout>
           ) : (
             <div className="flex flex-col gap-4 p-4 md:gap-6 md:p-6">

@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Tabela para cursos/pastas
+model Course {
+  id          String   @id @default(cuid())
+  name        String   // Nome do curso
+  path        String   @unique // Caminho da pasta no sistema
+  description String?  // Descrição opcional do curso
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relacionamentos
+  videos      Video[]
+  tags        CourseTag[]
+  
+  @@map("courses")
+}
+
+// Tabela para vídeos
+model Video {
+  id          String   @id @default(cuid())
+  name        String   // Nome do arquivo de vídeo
+  path        String   @unique // Caminho completo do arquivo
+  duration    Int?     // Duração em segundos
+  size        Int?     // Tamanho do arquivo em bytes
+  courseId    String   // ID do curso ao qual pertence
+  order       Int      // Ordem do vídeo no curso
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relacionamentos
+  course      Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress    VideoProgress?
+  tags        VideoTag[]
+  favorites   Favorite[]
+  ratings     VideoRating[]
+  
+  @@map("videos")
+}
+
+// Tabela para progresso de vídeos
+model VideoProgress {
+  id          String   @id @default(cuid())
+  videoId     String   @unique // Um progresso por vídeo
+  currentTime Float    @default(0) // Tempo atual em segundos
+  duration    Float    // Duração total do vídeo
+  watched     Boolean  @default(false) // Se foi assistido completamente
+  lastWatched DateTime @default(now()) // Última vez que foi assistido
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relacionamentos
+  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  
+  @@map("video_progress")
+}
+
+// Tabela para tags de cursos
+model CourseTag {
+  id       String @id @default(cuid())
+  courseId String
+  tag      String // Nome da tag
+  
+  // Relacionamentos
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  @@unique([courseId, tag])
+  @@map("course_tags")
+}
+
+// Tabela para tags de vídeos
+model VideoTag {
+  id      String @id @default(cuid())
+  videoId String
+  tag     String // Nome da tag
+  
+  // Relacionamentos
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  
+  @@unique([videoId, tag])
+  @@map("video_tags")
+}
+
+// Tabela para configurações do usuário
+model UserSettings {
+  id                String   @id @default(cuid())
+  rootFolderPath    String?  // Caminho da pasta raiz selecionada
+  autoPlay          Boolean  @default(false) // Reprodução automática
+  defaultVolume     Float    @default(1.0) // Volume padrão
+  playbackSpeed     Float    @default(1.0) // Velocidade padrão
+  theme             String   @default("system") // Tema: light, dark, system
+  language          String   @default("pt-BR") // Idioma
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("user_settings")
+}
+
+// Tabela para favoritos
+model Favorite {
+  id        String   @id @default(cuid())
+  videoId   String   @unique // Um favorito por vídeo
+  createdAt DateTime @default(now())
+  
+  // Relacionamentos
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  
+  @@map("favorites")
+}
+
+// Tabela para avaliações de vídeos
+model VideoRating {
+  id        String   @id @default(cuid())
+  videoId   String   @unique // Uma avaliação por vídeo
+  rating    Int      // Avaliação de 1 a 5
+  comment   String?  // Comentário opcional
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relacionamentos
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  
+  @@map("video_ratings")
+} 

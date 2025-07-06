@@ -11,6 +11,7 @@ interface VideoPlayerWrapperProps {
   videoList?: FolderItem[];
   currentVideoIndex?: number;
   onVideoChange?: (video: { path: string; name: string }, index: number) => void;
+  onVideoEnded?: () => void;
 }
 
 const VideoPlayerWrapperComponent = ({
@@ -19,7 +20,8 @@ const VideoPlayerWrapperComponent = ({
   onClose,
   videoList = [],
   currentVideoIndex = 0,
-  onVideoChange
+  onVideoChange,
+  onVideoEnded
 }: VideoPlayerWrapperProps) => {
   return (
     <VideoPlayer
@@ -29,6 +31,7 @@ const VideoPlayerWrapperComponent = ({
       videoList={videoList}
       currentVideoIndex={currentVideoIndex}
       onVideoChange={onVideoChange}
+      onVideoEnded={onVideoEnded}
     />
   );
 };

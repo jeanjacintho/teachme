@@ -17,17 +17,6 @@ import {
   SkipForward
 } from 'lucide-react';
 
-// Declaração de tipo para window.api
-declare global {
-  interface Window {
-    api?: {
-      selectFolder: () => Promise<string | null>;
-      listFolderContents: (folderPath: string) => Promise<FolderItem[]>;
-      getVideoUrl: (filePath: string) => Promise<string>;
-    };
-  }
-}
-
 interface VideoPlayerProps {
   videoPath: string;
   videoName: string;
@@ -35,6 +24,7 @@ interface VideoPlayerProps {
   videoList?: FolderItem[];
   currentVideoIndex?: number;
   onVideoChange?: (video: { path: string; name: string }, index: number) => void;
+  onVideoEnded?: () => void;
 }
 
 const VideoPlayerComponent = ({ 
@@ -42,7 +32,8 @@ const VideoPlayerComponent = ({
   onClose, 
   videoList = [], 
   currentVideoIndex = 0,
-  onVideoChange 
+  onVideoChange,
+  onVideoEnded
 }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoUrl, setVideoUrl] = useState<string>('');
@@ -57,6 +48,23 @@ const VideoPlayerComponent = ({
   const controlsTimeoutRef = useRef<number | undefined>(undefined);
   const [error, setError] = useState<string>('');
   const [autoPlay, setAutoPlay] = useState(false);
+
+  // Carregar configuração de autoplay do banco
+  useEffect(() => {
+    const loadAutoPlaySetting = async () => {
+      try {
+        if (window.api) {
+          const savedAutoPlay = await window.api.getAutoPlaySetting();
+          console.log('🎬 Loading autoplay setting from database:', savedAutoPlay);
+          setAutoPlay(savedAutoPlay);
+        }
+      } catch (error) {
+        console.error('❌ Error loading autoplay setting:', error);
+      }
+    };
+
+    loadAutoPlaySetting();
+  }, []);
 
   // Formatar tempo em MM:SS
   const formatTime = (time: number) => {
@@ -151,6 +159,21 @@ const VideoPlayerComponent = ({
     }
   };
 
+  // Função para marcar vídeo como não assistido
+  const markVideoAsUnwatched = async () => {
+    console.log('🎬 Marking video as unwatched:', videoPath);
+    try {
+      if (window.api?.saveVideoProgress && videoPath) {
+        await window.api.saveVideoProgress(videoPath, 0, 0, false);
+        console.log('✅ Video marked as unwatched successfully');
+        // Chamar callback para recarregar sidebar
+        onVideoEnded?.();
+      }
+    } catch (error) {
+      console.error('❌ Error marking video as unwatched:', error);
+    }
+  };
+
   // Event listeners do vídeo
   useEffect(() => {
     const video = videoRef.current;
@@ -182,7 +205,33 @@ const VideoPlayerComponent = ({
     };
 
     // Novo event listener para detectar quando o vídeo termina
-    const handleEnded = () => {
+    const handleEnded = async () => {
+      console.log('🎬 Video ended:', { videoPath, duration, videoDuration: video.duration });
+      // Usar a duração do vídeo diretamente do elemento, com fallback para o state
+      const finalDuration = video.duration || duration;
+      console.log('📊 Final duration for saving:', finalDuration);
+      
+      // Salvar progresso como assistido
+      if (window.api?.saveVideoProgress && videoPath && finalDuration && finalDuration > 0) {
+        try {
+          console.log('💾 Saving video progress...');
+          await window.api.saveVideoProgress(videoPath, finalDuration, finalDuration, true);
+          console.log('✅ Video progress saved successfully');
+          // Chamar callback para recarregar sidebar
+          onVideoEnded?.();
+        } catch (error) {
+          console.error('❌ Error saving video progress:', error);
+        }
+      } else {
+        console.log('⚠️ Cannot save progress:', { 
+          hasApi: !!window.api, 
+          hasSaveFunction: !!window.api?.saveVideoProgress, 
+          hasPath: !!videoPath, 
+          hasDuration: !!finalDuration,
+          finalDuration,
+          videoDuration: video.duration
+        });
+      }
       if (autoPlay) {
         playNextVideo();
       }
@@ -209,7 +258,7 @@ const VideoPlayerComponent = ({
       video.removeEventListener('ended', handleEnded);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
-  }, [videoUrl, autoPlay, playNextVideo]); // Adicionar playNextVideo como dependência
+  }, [videoUrl, autoPlay, playNextVideo, onVideoEnded, markVideoAsUnwatched]); // Adicionar playNextVideo como dependência
 
   // Monitorar estado do vídeo em tempo real
   useEffect(() => {
@@ -282,6 +331,11 @@ const VideoPlayerComponent = ({
         case 'p':
           e.preventDefault();
           playPreviousVideo();
+          break;
+        // Atalho para marcar vídeo como não assistido
+        case 'u':
+          e.preventDefault();
+          markVideoAsUnwatched();
           break;
       }
     };
@@ -481,7 +535,21 @@ const VideoPlayerComponent = ({
                 <Switch
                   id="auto-play"
                   checked={autoPlay}
-                  onCheckedChange={setAutoPlay}
+                  onCheckedChange={async (checked) => {
+                    console.log('🎬 Video Player: Auto play switch changed to:', checked);
+                    setAutoPlay(checked);
+                    
+                    // Salvar no banco de dados
+                    try {
+                      if (window.api) {
+                        console.log('🎬 Video Player: Saving autoplay setting to database...');
+                        await window.api.saveAutoPlaySetting(checked);
+                        console.log('🎬 Video Player: Autoplay setting saved successfully');
+                      }
+                    } catch (error) {
+                      console.error('🎬 Video Player: Error saving autoplay setting:', error);
+                    }
+                  }}
                   className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-white/30 data-[state=checked]:border-primary [&>span]:!bg-white [&>span]:dark:!bg-white"
                 />
                 <Label htmlFor="auto-play" className="text-white text-xs">

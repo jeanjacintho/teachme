@@ -4,9 +4,6 @@ import { DialogFooter } from "./ui/dialog";
 import { Separator } from "./ui/separator";
 import { useFolder } from "../context/folder-context";
 import { useState } from "react";
-import { Checkbox } from "./ui/checkbox";
-import { Label } from "./ui/label";
-import { Switch } from "./ui/switch";
 
 function formatPath(path: string | null, maxLen = 28) {
     if (!path) return 'No folder selected';
@@ -25,8 +22,17 @@ export function DialogSettings() {
         try {
             if (window.api) {
                 const selected = await window.api.selectFolder();
-                if (selected) setFolderPath(selected);
+                if (selected) {
+                    // Salvar o novo path no banco de dados
+                    await window.api.saveRootFolderPath(selected);
+                    console.log('💾 New folder path saved to database:', selected);
+                    
+                    // Atualizar o contexto local
+                    setFolderPath(selected);
+                }
             }
+        } catch (error) {
+            console.error('❌ Error selecting folder in settings:', error);
         } finally {
             setLoading(false);
         }
@@ -42,19 +48,34 @@ export function DialogSettings() {
                 <ModeToggle />
             </div>
             <Separator />
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-col gap-2">
                 <div className="flex flex-col min-w-0">
-                    <span>Change course folder</span>
+                    <span>Course folder</span>
                     <span className="truncate text-xs text-muted-foreground max-w-[250px]">{formatPath(folderPath)}</span>
                 </div>
-                <Button variant="outline" onClick={handleSelectFolder} disabled={loading}>
-                    {loading ? 'Selecting...' : 'Select folder'}
-                </Button>
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-                <Label htmlFor="auto-update" className="text-md font-base">Auto Update</Label>
-                <Switch id="auto-update" />
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={handleSelectFolder} disabled={loading} className="flex-1">
+                        {loading ? 'Selecting...' : 'Change folder'}
+                    </Button>
+                    <Button 
+                        variant="outline" 
+                        onClick={() => {
+                            if (confirm('Are you sure you want to reset the course folder? You will need to select a new folder on the next app launch.')) {
+                                // Limpar o path salvo no banco
+                                if (window.api) {
+                                    window.api.saveRootFolderPath('').then(() => {
+                                        console.log('🗑️ Folder path cleared from database');
+                                        setFolderPath(null);
+                                    }).catch(console.error);
+                                }
+                            }
+                        }}
+                        disabled={!folderPath}
+                        className="px-3"
+                    >
+                        Reset
+                    </Button>
+                </div>
             </div>
             <DialogFooter className="border-t pt-6">
                 <Button variant="secondary">Cancel</Button>
