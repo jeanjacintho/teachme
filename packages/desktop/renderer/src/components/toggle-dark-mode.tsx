@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Check, Moon, Sun } from "lucide-react"
+import { Check } from "lucide-react"
 import { useTheme } from "next-themes"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
@@ -78,3 +78,5 @@ export function ModeToggle() {
     </div>
   )
 }
+
+

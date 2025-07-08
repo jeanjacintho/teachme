@@ -1,16 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { AppSidebar } from "@/components/app-sidebar";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { SiteHeader } from "@/components/site-header";
 import { VideoPlayerWrapper } from "@/components/video-player-wrapper";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Bookmark, CheckCheck, Star, Play } from "lucide-react";
+import { Bookmark, CheckCheck, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFolder } from "../../context/folder-context";
-import type { FolderItem } from "../../../../../shared/types/video";
 
 // Componente para o card do vídeo
 function VideoCard({ children }: { children: React.ReactNode }) {
@@ -40,11 +36,10 @@ function DescriptionCard({ videoName, videoPath, onVideoEnded }: {
       if (!videoPath || !window.api) return;
       
       try {
-        // @ts-ignore - getVideoProgressByPath exists in preload
         const progress = await window.api.getVideoProgressByPath(videoPath);
         setIsWatched(!!progress?.watched);
       } catch (error) {
-        console.error('❌ Error loading video status:', error);
+        console.error("❌ Error loading video status:", error);
       }
     };
 
@@ -58,7 +53,7 @@ function DescriptionCard({ videoName, videoPath, onVideoEnded }: {
     setIsLoading(true);
     try {
       const newWatchedStatus = !isWatched;
-      console.log('🎬 Toggling video watched status:', { videoPath, currentStatus: isWatched, newStatus: newWatchedStatus });
+      console.log("🎬 Toggling video watched status:", { videoPath, currentStatus: isWatched, newStatus: newWatchedStatus });
       
       // Se está marcando como assistido, usar duração atual (ou 0 se não tiver)
       // Se está desmarcando, usar 0
@@ -67,12 +62,12 @@ function DescriptionCard({ videoName, videoPath, onVideoEnded }: {
       
       await window.api.saveVideoProgress(videoPath, currentTime, duration, newWatchedStatus);
       setIsWatched(newWatchedStatus);
-      console.log('✅ Video watched status toggled successfully');
+      console.log("✅ Video watched status toggled successfully");
       
       // Chamar callback para recarregar sidebar
       onVideoEnded?.();
     } catch (error) {
-      console.error('❌ Error toggling video watched status:', error);
+      console.error("❌ Error toggling video watched status:", error);
     } finally {
       setIsLoading(false);
     }
@@ -154,13 +149,10 @@ function VideoLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function Home() {
+export default function DashboardPage() {
   const [currentVideo, setCurrentVideo] = useState<{ path: string; name: string } | null>(null);
-  const [videoList, setVideoList] = useState<FolderItem[]>([]);
-  const [currentVideoIndex, setCurrentVideoIndex] = useState<number>(0);
   const { folderPath } = useFolder();
   const router = useRouter();
-  const sidebarRef = useRef<{ reloadCurrentFolder: () => void }>(null);
 
   useEffect(() => {
     if (!folderPath) {
@@ -168,73 +160,35 @@ export default function Home() {
     }
   }, [folderPath, router]);
 
-  const handleVideoSelect = (video: { path: string; name: string } | null) => {
-    setCurrentVideo(video);
-  };
-
-  const handleVideoListChange = (newVideoList: FolderItem[], newIndex: number) => {
-    setVideoList(newVideoList);
-    setCurrentVideoIndex(newIndex);
-  };
-
-  const handleVideoChange = (video: { path: string; name: string }, index: number) => {
-    setCurrentVideo(video);
-    setCurrentVideoIndex(index);
-  };
-
-  const handleCloseVideo = () => {
-    setCurrentVideo(null);
-  };
-
-  const handleVideoEnded = () => {
-    // Recarregar a pasta atual para atualizar os ícones
-    setTimeout(() => {
-      sidebarRef.current?.reloadCurrentFolder();
-    }, 1000); // Aguardar 1 segundo para garantir que o banco foi atualizado
-  };
-
   return (
-    <SidebarProvider style={{
-      "--sidebar-width": "calc(var(--spacing) * 72)",
-      "--header-height": "calc(var(--spacing) * 12)",
-    } as React.CSSProperties}>
-      <AppSidebar 
-        ref={sidebarRef}
-        variant="inset" 
-        onVideoSelect={handleVideoSelect}
-        onVideoListChange={handleVideoListChange}
-        selectedVideoPath={currentVideo?.path}
-      />
-      <SidebarInset>
-        <SiteHeader videoName={currentVideo?.name} />
-        <MainContent>
-          {currentVideo ? (
-            <VideoLayout>
-              <VideoCard>
-                <VideoPlayerWrapper
-                  videoPath={currentVideo.path}
-                  videoName={currentVideo.name}
-                  onClose={handleCloseVideo}
-                  videoList={videoList}
-                  currentVideoIndex={currentVideoIndex}
-                  onVideoChange={handleVideoChange}
-                  onVideoEnded={handleVideoEnded}
-                />
-              </VideoCard>
-              <DescriptionCard 
-                videoName={currentVideo.name} 
-                videoPath={currentVideo.path}
-                onVideoEnded={handleVideoEnded}
-              />
-            </VideoLayout>
-          ) : (
-            <div className="flex flex-col gap-4 p-4 md:gap-6 md:p-6">
-              <h1>TeachMe - Seus Cursos</h1>
-              <p>Selecione uma pasta no menu lateral para começar.</p>
-            </div>
-          )}
-        </MainContent>
-      </SidebarInset>
-    </SidebarProvider>
+    <MainContent>
+      {currentVideo ? (
+        <VideoLayout>
+          <VideoCard>
+            <VideoPlayerWrapper
+              videoPath={currentVideo.path}
+              videoName={currentVideo.name}
+              onClose={() => setCurrentVideo(null)} // Usar função local para fechar vídeo
+              videoList={[]} // videoList não é mais gerenciado aqui
+              currentVideoIndex={0} // currentVideoIndex não é mais gerenciado aqui
+              onVideoChange={(video) => { setCurrentVideo(video); }} // Usar função local para mudar vídeo
+              onVideoEnded={() => { /* Lógica de recarregar sidebar agora no layout */ }} // Lógica de recarregar sidebar agora no layout
+            />
+          </VideoCard>
+          <DescriptionCard 
+            videoName={currentVideo.name} 
+            videoPath={currentVideo.path}
+            onVideoEnded={() => { /* Lógica de recarregar sidebar agora no layout */ }}
+          />
+        </VideoLayout>
+      ) : (
+        <div className="flex flex-col gap-4 p-4 md:gap-6 md:p-6">
+          <h1>TeachMe - Seus Cursos</h1>
+          <p>Selecione uma pasta no menu lateral para começar.</p>
+        </div>
+      )}
+    </MainContent>
   );
-} 
+}
+
+

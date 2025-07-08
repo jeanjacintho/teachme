@@ -160,7 +160,7 @@ const VideoPlayerComponent = ({
   };
 
   // Função para marcar vídeo como não assistido
-  const markVideoAsUnwatched = async () => {
+  const markVideoAsUnwatched = useCallback(async () => {
     console.log('🎬 Marking video as unwatched:', videoPath);
     try {
       if (window.api?.saveVideoProgress && videoPath) {
@@ -172,7 +172,7 @@ const VideoPlayerComponent = ({
     } catch (error) {
       console.error('❌ Error marking video as unwatched:', error);
     }
-  };
+  }, [videoPath, onVideoEnded]);
 
   // Event listeners do vídeo
   useEffect(() => {
@@ -258,7 +258,7 @@ const VideoPlayerComponent = ({
       video.removeEventListener('ended', handleEnded);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
-  }, [videoUrl, autoPlay, playNextVideo, onVideoEnded, markVideoAsUnwatched]); // Adicionar playNextVideo como dependência
+  }, [videoUrl, autoPlay, playNextVideo, onVideoEnded, duration, videoPath]); // Adicionar duration e videoPath como dependências
 
   // Monitorar estado do vídeo em tempo real
   useEffect(() => {
@@ -342,7 +342,7 @@ const VideoPlayerComponent = ({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, volume, isFullscreen, videoList, currentVideoIndex, playNextVideo, playPreviousVideo, toggleFullscreen]);
+  }, [isPlaying, volume, isFullscreen, videoList, currentVideoIndex, playNextVideo, playPreviousVideo, toggleFullscreen, markVideoAsUnwatched]); // Adicionar markVideoAsUnwatched como dependência
 
   // Auto-hide controls
   const handleMouseMove = () => {
@@ -470,7 +470,7 @@ const VideoPlayerComponent = ({
         </div>
 
         {/* Control Buttons */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -635,4 +635,5 @@ const VideoPlayerComponent = ({
 };
 
 // Exportar o componente memoizado
-export const VideoPlayer = memo(VideoPlayerComponent); 
+export const VideoPlayer = memo(VideoPlayerComponent);
+

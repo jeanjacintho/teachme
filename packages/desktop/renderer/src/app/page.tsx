@@ -3,15 +3,12 @@
 import { useRouter } from "next/navigation";
 import { Card, CardTitle, CardFooter } from "@/components/ui/card";
 import { GraduationCap, LoaderCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useFolder } from "../context/folder-context";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 
 export default function Index() {
   const router = useRouter();
   const { setFolderPath } = useFolder();
-  const [loading, setLoading] = useState(false);
-  const [checkingSavedPath, setCheckingSavedPath] = useState(true);
 
   // Carregar path salvo automaticamente
   useEffect(() => {
@@ -20,19 +17,17 @@ export default function Index() {
         if (window.api) {
           const savedPath = await window.api.getRootFolderPath();
           if (savedPath) {
-            console.log('📂 Found saved folder path:', savedPath);
+            console.log("📂 Found saved folder path:", savedPath);
             setFolderPath(savedPath);
-            router.push('/app');
+            router.push("/dashboard"); // Alterado de /app para /dashboard
             return;
           } else {
-            router.push('/select-folder');
+            router.push("/select-folder");
             return
           }
         }
       } catch (error) {
-        console.error('❌ Error loading saved path:', error);
-      } finally {
-        setCheckingSavedPath(false);
+        console.error("❌ Error loading saved path:", error);
       }
     };
     loadSavedPath();
@@ -58,3 +53,5 @@ export default function Index() {
 
   );
 }
+
+

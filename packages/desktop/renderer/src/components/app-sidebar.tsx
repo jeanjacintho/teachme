@@ -8,14 +8,15 @@ import "@/app/sidebar-scrollbar.css"
 declare global {
   interface Window {
     api?: {
-      saveAutoPlaySetting(checked: boolean): unknown
-      saveVideoProgress(videoPath: string, finalDuration: number, finalDuration1: number, arg3: boolean): unknown
-      getAutoPlaySetting(): unknown
-      saveRootFolderPath(folderPath: string): unknown
-      getRootFolderPath(): unknown
       selectFolder: () => Promise<string | null>;
       listFolderContents: (folderPath: string) => Promise<FolderItem[]>;
       getVideoUrl: (filePath: string) => Promise<string>;
+      saveVideoProgress: (filePath: string, currentTime: number, duration: number, watched: boolean) => Promise<void>;
+      getVideoProgressByPath: (filePath: string) => Promise<{ currentTime: number; duration: number; watched: boolean } | null>;
+      saveRootFolderPath: (folderPath: string) => Promise<void>;
+      getRootFolderPath: () => Promise<string | null>;
+      saveAutoPlaySetting: (autoPlay: boolean) => Promise<void>;
+      getAutoPlaySetting: () => Promise<boolean>;
     };
   }
 }
@@ -38,11 +39,10 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   onVideoSelect?: (video: { path: string; name: string } | null) => void;
   onVideoListChange?: (videoList: FolderItem[], currentIndex: number) => void;
   selectedVideoPath?: string;
-  onRef?: (ref: { reloadCurrentFolder: () => void }) => void;
 }
 
 export const AppSidebar = forwardRef<{ reloadCurrentFolder: () => void }, AppSidebarProps>(
-  ({ onVideoSelect, onVideoListChange, selectedVideoPath, onRef, ...props }, ref) => {
+  ({ onVideoSelect, onVideoListChange, selectedVideoPath, ...props }, ref) => {
     const { folderPath } = useFolder();
     const [currentPath, setCurrentPath] = useState<string | null>(folderPath);
     const [pathHistory, setPathHistory] = useState<string[]>(folderPath ? [folderPath] : []);
@@ -50,20 +50,33 @@ export const AppSidebar = forwardRef<{ reloadCurrentFolder: () => void }, AppSid
     const [isClient, setIsClient] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
 
-    // Expor função para recarregar pasta atual
+    const loadFolderContents = useCallback(async (folder: string) => {
+      try {
+        if (window.api) {
+          const items = await window.api.listFolderContents(folder);
+          console.log("📁 Folder contents loaded:", items);
+          setCurrentItems(items);
+          const videoItems = items.filter(item => item.type === "video");
+          console.log("🎬 Video items:", videoItems);
+          onVideoListChange?.(videoItems, 0);
+        }
+      } catch (error) {
+        console.error("❌ Error loading folder contents:", error);
+      }
+    }, [onVideoListChange]);
+
     useImperativeHandle(ref, () => ({
       reloadCurrentFolder: () => {
         if (currentPath) {
           loadFolderContents(currentPath);
         }
       }
-    }), [currentPath]);
+    }), [currentPath, loadFolderContents]);
 
     useEffect(() => {
       setIsClient(true);
     }, []);
 
-    // Sempre que a raiz mudar (folderPath), reseta navegação local
     useEffect(() => {
       if (folderPath) {
         setCurrentPath(folderPath);
@@ -71,36 +84,18 @@ export const AppSidebar = forwardRef<{ reloadCurrentFolder: () => void }, AppSid
       }
     }, [folderPath]);
 
-    // Carrega itens da pasta atual
     useEffect(() => {
       if (currentPath) {
         loadFolderContents(currentPath);
       }
-    }, [currentPath]);
-
-    const loadFolderContents = useCallback(async (folder: string) => {
-      try {
-        if (window.api) {
-          const items = await window.api.listFolderContents(folder);
-          console.log('📁 Folder contents loaded:', items);
-          setCurrentItems(items);
-          // Notificar sobre a mudança na lista de vídeos
-          const videoItems = items.filter(item => item.type === 'video');
-          console.log('🎬 Video items:', videoItems);
-          onVideoListChange?.(videoItems, 0);
-        }
-      } catch (error) {
-        console.error('❌ Error loading folder contents:', error);
-      }
-    }, [onVideoListChange]);
+    }, [currentPath, loadFolderContents]);
 
     const handleItemClick = (item: FolderItem) => {
-      if (item.type === 'folder') {
+      if (item.type === "folder") {
         setCurrentPath(item.path);
         setPathHistory(prev => [...prev, item.path]);
-      } else if (item.type === 'video') {
-        // Encontrar o índice do vídeo selecionado
-        const videoItems = currentItems.filter(i => i.type === 'video');
+      } else if (item.type === "video") {
+        const videoItems = currentItems.filter(i => i.type === "video");
         const currentIndex = videoItems.findIndex(video => video.path === item.path);
         onVideoSelect?.({ path: item.path, name: item.name });
         onVideoListChange?.(videoItems, currentIndex);
@@ -116,17 +111,16 @@ export const AppSidebar = forwardRef<{ reloadCurrentFolder: () => void }, AppSid
     };
 
     const getCurrentFolderName = () => {
-      if (!currentPath) return '';
-      return currentPath.split('/').pop() || currentPath;
+      if (!currentPath) return "";
+      return currentPath.split("/").pop() || currentPath;
     };
 
-    // Função para formatar duração em HH:MM:SS
     const formatDuration = (seconds: number | undefined) => {
-      if (!seconds || isNaN(seconds)) return '';
+      if (!seconds || isNaN(seconds)) return "";
       const hours = Math.floor(seconds / 3600);
       const minutes = Math.floor((seconds % 3600) / 60);
       const remainingSeconds = Math.floor(seconds % 60);
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+      return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
     };
 
     return (
@@ -150,10 +144,8 @@ export const AppSidebar = forwardRef<{ reloadCurrentFolder: () => void }, AppSid
           <SidebarContent>
             <div className="custom-scrollbar overflow-y-auto h-full">
               <SidebarMenu>
-                {/* Interface de navegação só aparece após seleção */}
                 {currentPath && isClient && (
                   <div className="px-3 py-2 space-y-2">
-                    {/* Breadcrumb */}
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       {pathHistory.length > 1 && (
                         <Button
@@ -167,7 +159,6 @@ export const AppSidebar = forwardRef<{ reloadCurrentFolder: () => void }, AppSid
                       )}
                       <span className="truncate">{getCurrentFolderName()}</span>
                     </div>
-                    {/* Lista de itens */}
                     <div className="space-y-1">
                       {currentItems.map((item) => (
                         <Button
@@ -175,14 +166,14 @@ export const AppSidebar = forwardRef<{ reloadCurrentFolder: () => void }, AppSid
                           variant="ghost"
                           size="sm"
                           className={`w-full justify-between h-8 px-2 text-sm ${
-                            item.type === 'video' && selectedVideoPath === item.path
-                              ? 'text-primary'
-                              : 'text-muted-foreground'
+                            item.type === "video" && selectedVideoPath === item.path
+                              ? "text-primary"
+                              : "text-muted-foreground"
                           }`}
                           onClick={() => handleItemClick(item)}
                         >
                           <div className="flex items-center flex-1 min-w-0">
-                            {item.type === 'folder' ? (
+                            {item.type === "folder" ? (
                               <FolderIcon className="h-4 w-4 mr-2 flex-shrink-0" />
                             ) : item.watched ? (
                               <CheckIcon className="h-4 w-4 mr-2 flex-shrink-0 text-primary" />
@@ -192,11 +183,11 @@ export const AppSidebar = forwardRef<{ reloadCurrentFolder: () => void }, AppSid
                             <span className="truncate">{item.name}</span>
                             
                           </div>
-                          {item.type === 'video' && item.duration && (
+                          {item.type === "video" && item.duration && (
                             <span className={`text-xs ml-2 flex-shrink-0 ${
                               selectedVideoPath === item.path
-                                ? 'text-primary'
-                                : 'text-muted-foreground'
+                                ? "text-primary"
+                                : "text-muted-foreground"
                             }`}>
                               {formatDuration(item.duration)}
                             </span>
@@ -235,3 +226,7 @@ export const AppSidebar = forwardRef<{ reloadCurrentFolder: () => void }, AppSid
     )
   }
 )
+
+AppSidebar.displayName = "AppSidebar";
+
+
