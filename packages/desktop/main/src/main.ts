@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { fileTypeFromFile } from 'file-type';
 import getVideoDuration from 'get-video-duration';
 // Importação do database via require para evitar problemas de TypeScript
-const { getAllCourses, getVideosByCourse, saveVideoProgress, setFavorite, saveVideoRating, getVideoProgressByPath, getVideoByPath, saveRootFolderPath, getRootFolderPath, saveAutoPlaySetting, getAutoPlaySetting, connectDatabase, initializeDatabase, prisma } = require('../../../database/dist/database');
+const { getAllCourses, getVideosByCourse, saveVideoProgress, setFavorite, saveVideoRating, getVideoProgressByPath, getVideoByPath, saveRootFolderPath, getRootFolderPath, saveAutoPlaySetting, getAutoPlaySetting, isFavorite, getFavorites, connectDatabase, initializeDatabase, prisma } = require('../../../database/dist/database');
 
 const isDev = !app.isPackaged;
 
@@ -138,8 +138,22 @@ ipcMain.handle('db:saveVideoProgress', async (_event, filePath: string, currentT
 });
 
 // Favoritar
-ipcMain.handle('db:setFavorite', async (_event, videoId: string, isFavorite: boolean) => {
-  return setFavorite(videoId, isFavorite);
+ipcMain.handle('db:setFavorite', async (_event, filePath: string, isFavorite: boolean) => {
+  console.log('❤️ IPC: Setting favorite:', { filePath, isFavorite });
+  try {
+    // Buscar o vídeo pelo path
+    const video = await getVideoByPath(filePath);
+    if (!video) {
+      console.log('❌ Video not found in database:', filePath);
+      return null;
+    }
+    const result = await setFavorite(video.id, isFavorite);
+    console.log('❤️ IPC: Favorite set successfully:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ IPC: Error setting favorite:', error);
+    throw error;
+  }
 });
 
 // Avaliação
@@ -194,6 +208,32 @@ ipcMain.handle('get-auto-play-setting', async () => {
   } catch (error) {
     console.error('❌ IPC: Error loading autoplay setting:', error);
     throw error;
+  }
+});
+
+// Verificar se um vídeo é favorito
+ipcMain.handle('is-favorite', async (_event, filePath: string) => {
+  console.log('❤️ IPC: Checking if video is favorite:', filePath);
+  try {
+    const result = await isFavorite(filePath);
+    console.log('❤️ IPC: Favorite status:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ IPC: Error checking favorite status:', error);
+    return false;
+  }
+});
+
+// Listar todos os vídeos favoritos
+ipcMain.handle('get-favorites', async () => {
+  console.log('❤️ IPC: Getting favorites list...');
+  try {
+    const result = await getFavorites();
+    console.log('❤️ IPC: Favorites list:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ IPC: Error getting favorites list:', error);
+    return [];
   }
 });
 

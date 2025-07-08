@@ -42,7 +42,7 @@ var fs = require("fs");
 var file_type_1 = require("file-type");
 var get_video_duration_1 = require("get-video-duration");
 // Importação do database via require para evitar problemas de TypeScript
-var _a = require('../../../database/dist/database'), getAllCourses = _a.getAllCourses, getVideosByCourse = _a.getVideosByCourse, saveVideoProgress = _a.saveVideoProgress, setFavorite = _a.setFavorite, saveVideoRating = _a.saveVideoRating, getVideoProgressByPath = _a.getVideoProgressByPath, getVideoByPath = _a.getVideoByPath, saveRootFolderPath = _a.saveRootFolderPath, getRootFolderPath = _a.getRootFolderPath, saveAutoPlaySetting = _a.saveAutoPlaySetting, getAutoPlaySetting = _a.getAutoPlaySetting, connectDatabase = _a.connectDatabase, initializeDatabase = _a.initializeDatabase, prisma = _a.prisma;
+var _a = require('../../../database/dist/database'), getAllCourses = _a.getAllCourses, getVideosByCourse = _a.getVideosByCourse, saveVideoProgress = _a.saveVideoProgress, setFavorite = _a.setFavorite, saveVideoRating = _a.saveVideoRating, getVideoProgressByPath = _a.getVideoProgressByPath, getVideoByPath = _a.getVideoByPath, saveRootFolderPath = _a.saveRootFolderPath, getRootFolderPath = _a.getRootFolderPath, saveAutoPlaySetting = _a.saveAutoPlaySetting, getAutoPlaySetting = _a.getAutoPlaySetting, isFavorite = _a.isFavorite, getFavorites = _a.getFavorites, connectDatabase = _a.connectDatabase, initializeDatabase = _a.initializeDatabase, prisma = _a.prisma;
 var isDev = !electron_1.app.isPackaged;
 function createWindow() {
     var win = new electron_1.BrowserWindow({
@@ -218,9 +218,33 @@ electron_1.ipcMain.handle('db:saveVideoProgress', function (_event, filePath, cu
     });
 }); });
 // Favoritar
-electron_1.ipcMain.handle('db:setFavorite', function (_event, videoId, isFavorite) { return __awaiter(void 0, void 0, void 0, function () {
+electron_1.ipcMain.handle('db:setFavorite', function (_event, filePath, isFavorite) { return __awaiter(void 0, void 0, void 0, function () {
+    var video, result, error_2;
     return __generator(this, function (_a) {
-        return [2 /*return*/, setFavorite(videoId, isFavorite)];
+        switch (_a.label) {
+            case 0:
+                console.log('❤️ IPC: Setting favorite:', { filePath: filePath, isFavorite: isFavorite });
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 4, , 5]);
+                return [4 /*yield*/, getVideoByPath(filePath)];
+            case 2:
+                video = _a.sent();
+                if (!video) {
+                    console.log('❌ Video not found in database:', filePath);
+                    return [2 /*return*/, null];
+                }
+                return [4 /*yield*/, setFavorite(video.id, isFavorite)];
+            case 3:
+                result = _a.sent();
+                console.log('❤️ IPC: Favorite set successfully:', result);
+                return [2 /*return*/, result];
+            case 4:
+                error_2 = _a.sent();
+                console.error('❌ IPC: Error setting favorite:', error_2);
+                throw error_2;
+            case 5: return [2 /*return*/];
+        }
     });
 }); });
 // Avaliação
@@ -276,7 +300,7 @@ electron_1.ipcMain.handle('get-root-folder-path', function () { return __awaiter
 }); });
 // Salvar configuração de autoplay
 electron_1.ipcMain.handle('save-auto-play-setting', function (_event, autoPlay) { return __awaiter(void 0, void 0, void 0, function () {
-    var result, error_2;
+    var result, error_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -290,16 +314,16 @@ electron_1.ipcMain.handle('save-auto-play-setting', function (_event, autoPlay) 
                 console.log('✅ IPC: Autoplay setting saved successfully:', result);
                 return [2 /*return*/, result];
             case 3:
-                error_2 = _a.sent();
-                console.error('❌ IPC: Error saving autoplay setting:', error_2);
-                throw error_2;
+                error_3 = _a.sent();
+                console.error('❌ IPC: Error saving autoplay setting:', error_3);
+                throw error_3;
             case 4: return [2 /*return*/];
         }
     });
 }); });
 // Carregar configuração de autoplay
 electron_1.ipcMain.handle('get-auto-play-setting', function () { return __awaiter(void 0, void 0, void 0, function () {
-    var result, error_3;
+    var result, error_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -313,9 +337,55 @@ electron_1.ipcMain.handle('get-auto-play-setting', function () { return __awaite
                 console.log('🎬 IPC: Autoplay setting loaded successfully:', result);
                 return [2 /*return*/, result];
             case 3:
-                error_3 = _a.sent();
-                console.error('❌ IPC: Error loading autoplay setting:', error_3);
-                throw error_3;
+                error_4 = _a.sent();
+                console.error('❌ IPC: Error loading autoplay setting:', error_4);
+                throw error_4;
+            case 4: return [2 /*return*/];
+        }
+    });
+}); });
+// Verificar se um vídeo é favorito
+electron_1.ipcMain.handle('is-favorite', function (_event, filePath) { return __awaiter(void 0, void 0, void 0, function () {
+    var result, error_5;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                console.log('❤️ IPC: Checking if video is favorite:', filePath);
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 3, , 4]);
+                return [4 /*yield*/, isFavorite(filePath)];
+            case 2:
+                result = _a.sent();
+                console.log('❤️ IPC: Favorite status:', result);
+                return [2 /*return*/, result];
+            case 3:
+                error_5 = _a.sent();
+                console.error('❌ IPC: Error checking favorite status:', error_5);
+                return [2 /*return*/, false];
+            case 4: return [2 /*return*/];
+        }
+    });
+}); });
+// Listar todos os vídeos favoritos
+electron_1.ipcMain.handle('get-favorites', function () { return __awaiter(void 0, void 0, void 0, function () {
+    var result, error_6;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                console.log('❤️ IPC: Getting favorites list...');
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 3, , 4]);
+                return [4 /*yield*/, getFavorites()];
+            case 2:
+                result = _a.sent();
+                console.log('❤️ IPC: Favorites list:', result);
+                return [2 /*return*/, result];
+            case 3:
+                error_6 = _a.sent();
+                console.error('❌ IPC: Error getting favorites list:', error_6);
+                return [2 /*return*/, []];
             case 4: return [2 /*return*/];
         }
     });
@@ -323,7 +393,7 @@ electron_1.ipcMain.handle('get-auto-play-setting', function () { return __awaite
 // Inicializar banco de dados
 function initializeApp() {
     return __awaiter(this, void 0, void 0, function () {
-        var error_4;
+        var error_7;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -337,8 +407,8 @@ function initializeApp() {
                     console.log('✅ Database initialized successfully');
                     return [3 /*break*/, 4];
                 case 3:
-                    error_4 = _a.sent();
-                    console.error('❌ Database initialization failed:', error_4);
+                    error_7 = _a.sent();
+                    console.error('❌ Database initialization failed:', error_7);
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
             }
@@ -348,7 +418,7 @@ function initializeApp() {
 // Função para cadastrar vídeo no banco se não existir
 function ensureVideoInDatabase(filePath, fileName, duration) {
     return __awaiter(this, void 0, void 0, function () {
-        var video, course, error_5;
+        var video, course, error_8;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -397,8 +467,8 @@ function ensureVideoInDatabase(filePath, fileName, duration) {
                     _a.label = 8;
                 case 8: return [2 /*return*/, video];
                 case 9:
-                    error_5 = _a.sent();
-                    console.error('❌ Error ensuring video in database:', error_5);
+                    error_8 = _a.sent();
+                    console.error('❌ Error ensuring video in database:', error_8);
                     return [2 /*return*/, null];
                 case 10: return [2 /*return*/];
             }

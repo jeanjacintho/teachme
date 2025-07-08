@@ -216,4 +216,42 @@ export async function getAutoPlaySetting() {
     console.error('🗄️ Database: Error in getAutoPlaySetting:', error);
     throw error;
   }
+}
+
+// Verificar se um vídeo é favorito pelo path do arquivo
+export async function isFavorite(filePath: string) {
+  try {
+    // Buscar o vídeo pelo path
+    const video = await prisma.video.findUnique({ where: { path: filePath } });
+    if (!video) return false;
+    
+    // Verificar se existe um favorito para este vídeo
+    const favorite = await prisma.favorite.findUnique({ where: { videoId: video.id } });
+    return !!favorite;
+  } catch (error) {
+    console.error('🗄️ Database: Error in isFavorite:', error);
+    return false;
+  }
+}
+
+// Listar todos os vídeos favoritos
+export async function getFavorites() {
+  try {
+    const favorites = await prisma.favorite.findMany({
+      include: {
+        video: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    
+    return favorites.map(fav => ({
+      filePath: fav.video.path,
+      name: fav.video.name,
+    }));
+  } catch (error) {
+    console.error('🗄️ Database: Error in getFavorites:', error);
+    return [];
+  }
 } 

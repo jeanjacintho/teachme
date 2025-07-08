@@ -15,6 +15,17 @@ const api = {
   saveVideoProgress: async (filePath: string, currentTime: number, duration: number, watched: boolean) => {
     return await ipcRenderer.invoke('db:saveVideoProgress', filePath, currentTime, duration, watched);
   },
+  setFavorite: async (filePath: string, isFavorite: boolean) => {
+    console.log('🔌 Preload: setFavorite called with:', { filePath, isFavorite });
+    try {
+      const result = await ipcRenderer.invoke('db:setFavorite', filePath, isFavorite);
+      console.log('🔌 Preload: setFavorite result:', result);
+      return result;
+    } catch (error) {
+      console.error('🔌 Preload: Error in setFavorite:', error);
+      throw error;
+    }
+  },
   getVideoProgressByPath: async (filePath: string) => {
     return await ipcRenderer.invoke('get-video-progress-by-path', filePath);
   },
@@ -44,6 +55,28 @@ const api = {
     } catch (error) {
       console.error('🔌 Preload: Error in getAutoPlaySetting:', error);
       throw error;
+    }
+  },
+  isFavorite: async (filePath: string) => {
+    console.log('🔌 Preload: isFavorite called with:', filePath);
+    try {
+      const result = await ipcRenderer.invoke('is-favorite', filePath);
+      console.log('🔌 Preload: isFavorite result:', result);
+      return result;
+    } catch (error) {
+      console.error('🔌 Preload: Error in isFavorite:', error);
+      return false;
+    }
+  },
+  getFavorites: async () => {
+    console.log('🔌 Preload: getFavorites called');
+    try {
+      const result = await ipcRenderer.invoke('get-favorites');
+      console.log('🔌 Preload: getFavorites result:', result);
+      return result;
+    } catch (error) {
+      console.error('🔌 Preload: Error in getFavorites:', error);
+      return [];
     }
   },
   // Outros métodos seguros podem ser expostos aqui

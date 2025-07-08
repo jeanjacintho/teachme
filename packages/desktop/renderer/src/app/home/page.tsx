@@ -31,7 +31,9 @@ function DescriptionCard({ videoName, videoPath, onVideoEnded }: {
   onVideoEnded?: () => void;
 }) {
   const [isWatched, setIsWatched] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
   const { reloadSidebar } = useSidebarReload();
 
   // Carregar estado inicial do vídeo
@@ -47,7 +49,19 @@ function DescriptionCard({ videoName, videoPath, onVideoEnded }: {
       }
     };
 
+    const loadFavoriteStatus = async () => {
+      if (!videoPath || !window.api) return;
+      
+      try {
+        const favorite = await window.api.isFavorite(videoPath);
+        setIsFavorite(favorite);
+      } catch (error) {
+        console.error("❌ Error loading favorite status:", error);
+      }
+    };
+
     loadVideoStatus();
+    loadFavoriteStatus();
   }, [videoPath]);
 
   // Função para alternar estado de assistido
@@ -74,6 +88,25 @@ function DescriptionCard({ videoName, videoPath, onVideoEnded }: {
       console.error("❌ Error toggling video watched status:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Função para alternar estado de favorito
+  const toggleFavoriteStatus = async () => {
+    if (!videoPath || !window.api?.setFavorite) return;
+    
+    setIsFavoriteLoading(true);
+    try {
+      const newFavoriteStatus = !isFavorite;
+      console.log("⭐ Toggling favorite status:", { videoPath, currentStatus: isFavorite, newStatus: newFavoriteStatus });
+      
+      await window.api.setFavorite(videoPath, newFavoriteStatus);
+      setIsFavorite(newFavoriteStatus);
+      console.log("✅ Video favorite status toggled successfully");
+    } catch (error) {
+      console.error("❌ Error toggling favorite status:", error);
+    } finally {
+      setIsFavoriteLoading(false);
     }
   };
 
@@ -110,12 +143,14 @@ function DescriptionCard({ videoName, videoPath, onVideoEnded }: {
                 )}
               </Button>
               <Button
-                variant="ghost"
+                variant={isFavorite ? "default" : "ghost"}
                 size="icon"
                 className="ml-2 border"
                 aria-label="Favoritar"
+                onClick={toggleFavoriteStatus}
+                disabled={isFavoriteLoading}
               >
-                <Bookmark className="w-5 h-5 text-primary" />
+                <Bookmark className={`w-5 h-5 ${isFavorite ? "text-white" : "text-primary"}`} fill={isFavorite ? "currentColor" : "none"} />
               </Button>
             </div>
             <div className="border rounded-lg px-4 py-3 w-full flex flex-col items-center justify-center">

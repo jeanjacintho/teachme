@@ -12,6 +12,10 @@ declare global {
       getRootFolderPath: () => Promise<string | null>;
       saveAutoPlaySetting: (autoPlay: boolean) => Promise<void>;
       getAutoPlaySetting: () => Promise<boolean>;
+      // Operações de favoritos
+      setFavorite: (filePath: string, isFavorite: boolean) => Promise<void>;
+      getFavorites: () => Promise<{ filePath: string; name: string }[]>;
+      isFavorite: (filePath: string) => Promise<boolean>;
     };
   }
 }

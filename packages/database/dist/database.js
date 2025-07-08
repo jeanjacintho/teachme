@@ -16,6 +16,8 @@ exports.saveRootFolderPath = saveRootFolderPath;
 exports.getRootFolderPath = getRootFolderPath;
 exports.saveAutoPlaySetting = saveAutoPlaySetting;
 exports.getAutoPlaySetting = getAutoPlaySetting;
+exports.isFavorite = isFavorite;
+exports.getFavorites = getFavorites;
 const client_1 = require("@prisma/client");
 // Configuração do banco de dados
 const databaseUrl = process.env.DATABASE_URL || 'file:./teachme.db';
@@ -223,5 +225,42 @@ async function getAutoPlaySetting() {
     catch (error) {
         console.error('🗄️ Database: Error in getAutoPlaySetting:', error);
         throw error;
+    }
+}
+// Verificar se um vídeo é favorito pelo path do arquivo
+async function isFavorite(filePath) {
+    try {
+        // Buscar o vídeo pelo path
+        const video = await exports.prisma.video.findUnique({ where: { path: filePath } });
+        if (!video)
+            return false;
+        // Verificar se existe um favorito para este vídeo
+        const favorite = await exports.prisma.favorite.findUnique({ where: { videoId: video.id } });
+        return !!favorite;
+    }
+    catch (error) {
+        console.error('🗄️ Database: Error in isFavorite:', error);
+        return false;
+    }
+}
+// Listar todos os vídeos favoritos
+async function getFavorites() {
+    try {
+        const favorites = await exports.prisma.favorite.findMany({
+            include: {
+                video: true,
+            },
+            orderBy: {
+                createdAt: 'desc',
+            },
+        });
+        return favorites.map(fav => ({
+            filePath: fav.video.path,
+            name: fav.video.name,
+        }));
+    }
+    catch (error) {
+        console.error('🗄️ Database: Error in getFavorites:', error);
+        return [];
     }
 }

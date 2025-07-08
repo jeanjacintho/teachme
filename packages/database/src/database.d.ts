@@ -98,3 +98,9 @@ export declare function saveVideoRating(videoId: string, rating: number, comment
     rating: number;
     comment: string | null;
 }>;
+
+export declare function getAutoPlaySetting(): Promise<boolean>;
+
+export declare function isFavorite(filePath: string): Promise<boolean>;
+
+export declare function getFavorites(): Promise<{ filePath: string; name: string }[]>;
