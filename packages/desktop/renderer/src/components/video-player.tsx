@@ -470,7 +470,7 @@ const VideoPlayerComponent = ({
         </div>
 
         {/* Control Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -527,8 +527,6 @@ const VideoPlayerComponent = ({
           </div>
 
           <div className="flex items-center gap-2">
-            
-
             {/* Auto Play Switch */}
             {videoList.length > 1 && (
               <div className="flex items-center gap-2">

@@ -19,7 +19,7 @@ export default function Index() {
           if (savedPath) {
             console.log("📂 Found saved folder path:", savedPath);
             setFolderPath(savedPath);
-            router.push("/dashboard"); // Alterado de /app para /dashboard
+            router.push("/dashboard");
             return;
           } else {
             router.push("/select-folder");

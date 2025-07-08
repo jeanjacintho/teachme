@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button"
 import { GraduationCapIcon, FolderIcon, PlayIcon, CheckIcon, ChevronLeftIcon, Settings as SettingsIcon } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { DialogSettings } from "./dialog-settings"
+import { useVideo } from "@/context/video-context";
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   onVideoSelect?: (video: { path: string; name: string } | null) => void;
@@ -44,6 +45,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 export const AppSidebar = forwardRef<{ reloadCurrentFolder: () => void }, AppSidebarProps>(
   ({ onVideoSelect, onVideoListChange, selectedVideoPath, ...props }, ref) => {
     const { folderPath } = useFolder();
+    const { setCurrentVideo, setVideoList, setCurrentVideoIndex, currentVideo } = useVideo();
     const [currentPath, setCurrentPath] = useState<string | null>(folderPath);
     const [pathHistory, setPathHistory] = useState<string[]>(folderPath ? [folderPath] : []);
     const [currentItems, setCurrentItems] = useState<FolderItem[]>([]);
@@ -98,6 +100,9 @@ export const AppSidebar = forwardRef<{ reloadCurrentFolder: () => void }, AppSid
         const videoItems = currentItems.filter(i => i.type === "video");
         const currentIndex = videoItems.findIndex(video => video.path === item.path);
         onVideoSelect?.({ path: item.path, name: item.name });
+        setCurrentVideo({ path: item.path, name: item.name });
+        setVideoList(videoItems);
+        setCurrentVideoIndex(currentIndex);
         onVideoListChange?.(videoItems, currentIndex);
       }
     };
@@ -122,6 +127,9 @@ export const AppSidebar = forwardRef<{ reloadCurrentFolder: () => void }, AppSid
       const remainingSeconds = Math.floor(seconds % 60);
       return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
     };
+
+    // Usar currentVideo do contexto em vez da prop selectedVideoPath
+    const selectedPath = currentVideo?.path || selectedVideoPath;
 
     return (
       <>
@@ -166,7 +174,7 @@ export const AppSidebar = forwardRef<{ reloadCurrentFolder: () => void }, AppSid
                           variant="ghost"
                           size="sm"
                           className={`w-full justify-between h-8 px-2 text-sm ${
-                            item.type === "video" && selectedVideoPath === item.path
+                            item.type === "video" && selectedPath === item.path
                               ? "text-primary"
                               : "text-muted-foreground"
                           }`}
@@ -185,7 +193,7 @@ export const AppSidebar = forwardRef<{ reloadCurrentFolder: () => void }, AppSid
                           </div>
                           {item.type === "video" && item.duration && (
                             <span className={`text-xs ml-2 flex-shrink-0 ${
-                              selectedVideoPath === item.path
+                              selectedPath === item.path
                                 ? "text-primary"
                                 : "text-muted-foreground"
                             }`}>

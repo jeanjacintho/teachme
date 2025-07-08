@@ -2,13 +2,13 @@
 
 import { MainLayoutClient } from "@/components/main-layout-client";
 
-export default function DashboardLayout({
+export default function HomeLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <MainLayoutClient>
+    <MainLayoutClient minimized={false}>
       {children}
     </MainLayoutClient>
   );
