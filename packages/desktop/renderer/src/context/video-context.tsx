@@ -25,10 +25,16 @@ export function VideoProvider({ children }: { children: React.ReactNode }) {
   const [videoList, setVideoList] = useState<FolderItem[]>([]);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   
+  // Wrapper para setCurrentVideo com logging
+  const setCurrentVideoWithLog = (video: Video) => {
+    console.log("🎬 VIDEO CONTEXT: setCurrentVideo called with:", video);
+    setCurrentVideo(video);
+  };
+  
   return (
     <VideoContext.Provider value={{ 
       currentVideo, 
-      setCurrentVideo, 
+      setCurrentVideo: setCurrentVideoWithLog, 
       videoList, 
       setVideoList,
       currentVideoIndex,

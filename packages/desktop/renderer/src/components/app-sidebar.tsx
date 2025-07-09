@@ -5,21 +5,7 @@ import { useState, useEffect, useCallback, useImperativeHandle, forwardRef } fro
 import type { FolderItem } from "../../../../shared/types/video"
 import { useFolder } from "../context/folder-context"
 import "@/app/sidebar-scrollbar.css"
-declare global {
-  interface Window {
-    api?: {
-      selectFolder: () => Promise<string | null>;
-      listFolderContents: (folderPath: string) => Promise<FolderItem[]>;
-      getVideoUrl: (filePath: string) => Promise<string>;
-      saveVideoProgress: (filePath: string, currentTime: number, duration: number, watched: boolean) => Promise<void>;
-      getVideoProgressByPath: (filePath: string) => Promise<{ currentTime: number; duration: number; watched: boolean } | null>;
-      saveRootFolderPath: (folderPath: string) => Promise<void>;
-      getRootFolderPath: () => Promise<string | null>;
-      saveAutoPlaySetting: (autoPlay: boolean) => Promise<void>;
-      getAutoPlaySetting: () => Promise<boolean>;
-    };
-  }
-}
+
 
 import {
   Sidebar,
@@ -31,10 +17,11 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
-import { GraduationCapIcon, FolderIcon, PlayIcon, CheckIcon, ChevronLeftIcon, Settings as SettingsIcon } from "lucide-react"
+import { GraduationCapIcon, FolderIcon, PlayIcon, CheckIcon, ChevronLeftIcon, Settings as SettingsIcon, HeartIcon, ChartNoAxesCombinedIcon } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { DialogSettings } from "./dialog-settings"
 import { useVideo } from "@/context/video-context";
+import { useRouter } from "next/navigation"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   onVideoSelect?: (video: { path: string; name: string } | null) => void;
@@ -51,6 +38,7 @@ export const AppSidebar = forwardRef<{ reloadCurrentFolder: () => void }, AppSid
     const [currentItems, setCurrentItems] = useState<FolderItem[]>([]);
     const [isClient, setIsClient] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const router = useRouter();
 
     const loadFolderContents = useCallback(async (folder: string) => {
       try {
@@ -209,6 +197,24 @@ export const AppSidebar = forwardRef<{ reloadCurrentFolder: () => void }, AppSid
             </div>
           </SidebarContent>
           <SidebarFooter>
+          <Button
+                  variant="ghost"
+                  className="w-full flex items-center justify-start gap-2"
+                  onClick={() => router.push('/statistics')}
+                  aria-label="Statistics"
+                >
+                  <ChartNoAxesCombinedIcon className="h-5 w-5" />
+                  <span>Statistics</span>
+                </Button>
+            <Button
+                  variant="ghost"
+                  className="w-full flex items-center justify-start gap-2"
+                  onClick={() => router.push('/favorites')}
+                  aria-label="Favorites"
+                >
+                  <HeartIcon className="h-5 w-5" />
+                  <span>Favorites</span>
+                </Button>
             <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
               <DialogTrigger asChild>
                 <Button
@@ -228,6 +234,7 @@ export const AppSidebar = forwardRef<{ reloadCurrentFolder: () => void }, AppSid
                 <DialogSettings />
               </DialogContent>
             </Dialog>
+            
           </SidebarFooter>
         </Sidebar>
       </>

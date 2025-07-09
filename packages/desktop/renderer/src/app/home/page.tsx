@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { VideoPlayerWrapper } from "@/components/video-player-wrapper";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Bookmark, CheckCheck, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFolder } from "../../context/folder-context";
-import DashboardPage from "../dashboard/page";
 import { useVideo } from "@/context/video-context";
 import { useSidebarReload } from "@/context/sidebar-reload-context";
+import { useSearchParams } from "next/navigation";
 
 // Componente para o card do vídeo
 function VideoCard({ children }: { children: React.ReactNode }) {
@@ -190,10 +190,21 @@ function VideoLayout({ children }: { children: React.ReactNode }) {
 
 // Remover o type HomePageProps e as props
 export default function HomePage() {
-  const { currentVideo, setCurrentVideo, videoList, currentVideoIndex, setCurrentVideoIndex } = useVideo();
+  const { currentVideo, setCurrentVideo, videoList, currentVideoIndex, setCurrentVideoIndex, setVideoList } = useVideo();
   const { reloadSidebar } = useSidebarReload();
   const { folderPath } = useFolder();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const videoPathParam = searchParams.get("videoPath");
+  const videoNameParam = searchParams.get("videoName");
+
+  // Se vier por URL, setar o vídeo no contexto
+  useEffect(() => {
+    if (videoPathParam && videoNameParam && !currentVideo) {
+      setCurrentVideo({ path: videoPathParam, name: videoNameParam });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoPathParam, videoNameParam]);
 
   useEffect(() => {
     if (!folderPath) {
@@ -201,11 +212,38 @@ export default function HomePage() {
     }
   }, [folderPath, router]);
 
+  // Carregar lista de vídeos da pasta quando o folderPath muda
+  useEffect(() => {
+    const loadVideoList = async () => {
+      if (!folderPath || !window.api) return;
+      try {
+        const items = await window.api.listFolderContents(folderPath);
+        const videoItems = items.filter(item => item.type === "video");
+        setVideoList(videoItems);
+      } catch (error) {
+        console.error("❌ Error loading video list:", error);
+      }
+    };
+    loadVideoList();
+  }, [folderPath, setVideoList]);
+
+  // Lidar com mudanças no currentVideo - encontrar seu índice na lista atual
+  useEffect(() => {
+    if (currentVideo && videoList.length > 0) {
+      const index = videoList.findIndex(video => video.path === currentVideo.path);
+      if (index !== -1) {
+        setCurrentVideoIndex(index);
+      }
+    }
+  }, [currentVideo, videoList, setCurrentVideoIndex]);
+
   const handleVideoChange = (video: { path: string; name: string }, index: number) => {
     setCurrentVideo(video);
     setCurrentVideoIndex(index);
     // O AppSidebar já usa selectedVideoPath do contexto
   };
+
+
 
   return (
     <MainContent>

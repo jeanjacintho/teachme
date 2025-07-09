@@ -175,8 +175,12 @@ electron_1.ipcMain.handle('list-folder-contents', function (event, folderPath) {
 }); });
 // Handler IPC para obter URL do vídeo
 electron_1.ipcMain.handle('get-video-url', function (event, filePath) { return __awaiter(void 0, void 0, void 0, function () {
+    var url;
     return __generator(this, function (_a) {
-        return [2 /*return*/, "file://".concat(filePath)];
+        console.log('🎬 IPC: Getting video URL for:', filePath);
+        url = "file://".concat(filePath);
+        console.log('🎬 IPC: Video URL generated:', url);
+        return [2 /*return*/, url];
     });
 }); });
 // Listar cursos

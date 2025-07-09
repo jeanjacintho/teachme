@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Bookmark, Play, Trash2 } from "lucide-react";
 import { useVideo } from "@/context/video-context";
+import { useFolder } from "@/context/folder-context";
 import { useRouter } from "next/navigation";
 
 type FavoriteVideo = {
@@ -17,6 +18,7 @@ export default function FavoritesPage() {
   const [loading, setLoading] = useState(true);
   const [removingFavorites, setRemovingFavorites] = useState<Set<string>>(new Set());
   const { setCurrentVideo } = useVideo();
+  const { setFolderPath } = useFolder();
   const router = useRouter();
 
   // Carregar favoritos do banco de dados
@@ -60,8 +62,19 @@ export default function FavoritesPage() {
 
   // Função para reproduzir vídeo
   const playVideo = (video: FavoriteVideo) => {
-    setCurrentVideo({ path: video.filePath, name: video.name });
-    router.push('/home');
+    // Extrair o caminho da pasta do arquivo de vídeo (compatível com Windows e Unix)
+    const lastSeparator = video.filePath.lastIndexOf('/') !== -1 
+      ? video.filePath.lastIndexOf('/') 
+      : video.filePath.lastIndexOf('\\');
+    const folderPath = video.filePath.substring(0, lastSeparator);
+    setFolderPath(folderPath);
+
+    // Navegar para /home com os parâmetros do vídeo
+    const params = new URLSearchParams({
+      videoPath: video.filePath,
+      videoName: video.name,
+    });
+    router.push(`/home?${params.toString()}`);
   };
 
   if (loading) {
